@@ -89,7 +89,7 @@ const DisparosPage = () => {
     // Fetch leads for the list
     const { data: leads, error } = await supabase
       .from("leads")
-      .select("phone, name")
+      .select("phone, name, extra_data")
       .eq("list_id", selectedList);
 
     if (error || !leads || leads.length === 0) {
