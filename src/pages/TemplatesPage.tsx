@@ -223,13 +223,28 @@ const TemplatesPage = () => {
             <div className="flex items-center justify-between">
               <Label className="text-sm text-muted-foreground">Botões (máx. 3)</Label>
               {(meta.buttons?.length || 0) < 3 && (
-                <Button variant="ghost" size="sm" onClick={addButton}><Plus className="w-3 h-3 mr-1" />Adicionar</Button>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => addButton("reply")}><Plus className="w-3 h-3 mr-1" />Resposta</Button>
+                  <Button variant="ghost" size="sm" onClick={() => addButton("url")}><Plus className="w-3 h-3 mr-1" />Link</Button>
+                  <Button variant="ghost" size="sm" onClick={() => addButton("call")}><Plus className="w-3 h-3 mr-1" />Ligar</Button>
+                </div>
               )}
             </div>
             {(meta.buttons || []).map((btn, i) => (
-              <div key={i} className="flex gap-2">
-                <Input value={btn.text} onChange={(e) => updateButton(i, e.target.value)} placeholder={`Botão ${i + 1}`} className="bg-secondary border-border" />
-                <Button variant="ghost" size="icon" onClick={() => removeButton(i)}><X className="w-3 h-3" /></Button>
+              <div key={i} className="bg-secondary/50 rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground uppercase">
+                    {btn.type === "url" ? "🔗 Link" : btn.type === "call" ? "📞 Ligar" : "💬 Resposta"}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeButton(i)}><X className="w-3 h-3" /></Button>
+                </div>
+                <Input value={btn.text} onChange={(e) => updateButton(i, "text", e.target.value)} placeholder="Texto do botão" className="bg-secondary border-border" />
+                {btn.type === "url" && (
+                  <Input value={btn.url || ""} onChange={(e) => updateButton(i, "url", e.target.value)} placeholder="https://seusite.com" className="bg-secondary border-border" />
+                )}
+                {btn.type === "call" && (
+                  <Input value={btn.phoneNumber || ""} onChange={(e) => updateButton(i, "phoneNumber", e.target.value)} placeholder="5511999999999" className="bg-secondary border-border" />
+                )}
               </div>
             ))}
           </div>
