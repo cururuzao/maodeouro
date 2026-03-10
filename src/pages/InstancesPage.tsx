@@ -53,8 +53,8 @@ const InstancesPage = () => {
   useEffect(() => { loadInstances(); }, [loadInstances]);
 
   const handleCreate = async () => {
-    if (!newName.trim() || !newInstanceId.trim() || !newToken.trim()) {
-      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+    if (!newName.trim() || !newInstanceId.trim() || !newToken.trim() || !newClientToken.trim()) {
+      toast({ title: "Preencha todos os campos obrigatórios", description: "Instance ID, Token e Client-Token são obrigatórios. Obtenha em app.z-api.io.", variant: "destructive" });
       return;
     }
     setCreating(true);
