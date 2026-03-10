@@ -119,13 +119,16 @@ export async function fetchInstances(): Promise<Instance[]> {
   return apiCall("/instance/fetchInstances");
 }
 
-export async function createInstance(instanceName: string): Promise<any> {
+export async function createInstance(
+  instanceName: string,
+  integration: "WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS" = "WHATSAPP-BAILEYS"
+): Promise<any> {
   return apiCall("/instance/create", {
     method: "POST",
     body: JSON.stringify({
       instanceName,
       qrcode: false,
-      integration: "WHATSAPP-BAILEYS",
+      integration,
     }),
   });
 }
