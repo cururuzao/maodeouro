@@ -143,21 +143,38 @@ const InstancesPage = () => {
         </div>
       )}
 
-      {/* QR Code modal */}
-      {qrData && (
+      {/* Pairing Code modal */}
+      {connectingInstance && (
         <div className="fixed inset-0 z-50 bg-background/80 flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-xl p-6 max-w-sm w-full relative">
-            <button onClick={() => setQrData(null)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
-            <h3 className="text-lg font-bold text-foreground text-center mb-1">Conectar "{qrData.name}"</h3>
-            <p className="text-sm text-muted-foreground text-center mb-4">Escaneie o QR Code no WhatsApp</p>
-            {qrData.data.base64 && <div className="flex justify-center mb-4"><img src={qrData.data.base64} alt="QR Code" className="w-64 h-64 rounded-lg" /></div>}
-            {qrData.data.pairingCode && (
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-1">Ou use o código:</p>
-                <p className="font-mono text-lg font-bold text-foreground">{qrData.data.pairingCode}</p>
-              </div>
+            <button onClick={() => { setConnectingInstance(null); setPairingCode(null); }} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+            <h3 className="text-lg font-bold text-foreground text-center mb-1">Conectar "{connectingInstance}"</h3>
+            
+            {!pairingCode ? (
+              <>
+                <p className="text-sm text-muted-foreground text-center mb-4">Digite seu número de telefone com código do país</p>
+                <Input
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="5511999999999"
+                  className="h-10 bg-secondary border-border mb-3"
+                  onKeyDown={(e) => e.key === "Enter" && handlePairWithPhone()}
+                />
+                <Button onClick={handlePairWithPhone} className="w-full h-11">
+                  <Phone className="w-4 h-4 mr-2" />
+                  Gerar código de pareamento
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground text-center mb-2">Digite este código no seu WhatsApp:</p>
+                <p className="text-sm text-muted-foreground text-center mb-4">Configurações → Aparelhos conectados → Conectar com número</p>
+                <div className="bg-secondary rounded-lg p-4 text-center mb-4">
+                  <p className="font-mono text-2xl font-bold text-foreground tracking-widest">{pairingCode}</p>
+                </div>
+                <Button variant="outline" className="w-full" onClick={() => { setConnectingInstance(null); setPairingCode(null); loadInstances(); }}>Fechar</Button>
+              </>
             )}
-            <Button variant="outline" className="w-full mt-4" onClick={() => { setQrData(null); loadInstances(); }}>Fechar</Button>
           </div>
         </div>
       )}
