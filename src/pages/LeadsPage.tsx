@@ -1,10 +1,20 @@
-import { useState } from "react";
-import { Users, Plus, Upload, ClipboardPaste, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
+import { supabase } from "@/integrations/supabase/client";
+
+interface LeadList {
+  id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  lead_count?: number;
+}
 
 const LeadsPage = () => {
   const [showCreate, setShowCreate] = useState(false);
@@ -13,25 +23,117 @@ const LeadsPage = () => {
   const [pasteData, setPasteData] = useState("");
   const [importMode, setImportMode] = useState<"upload" | "paste">("paste");
   const [hasCountryCode, setHasCountryCode] = useState<boolean | null>(null);
+  const [lists, setLists] = useState<LeadList[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  // Saved lists (localStorage for now)
-  const [lists, setLists] = useState<{ name: string; description: string; count: number }[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("lead_lists") || "[]");
-    } catch { return []; }
-  });
+  const fetchLists = async () => {
+    setLoading(true);
+    const { data: listsData, error } = await supabase
+      .from("lead_lists")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  const handleProcess = () => {
+    if (error) {
+      toast({ title: "Erro ao carregar listas", description: error.message, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    // Get counts for each list
+    const listsWithCounts: LeadList[] = [];
+    for (const list of listsData || []) {
+      const { count } = await supabase
+        .from("leads")
+        .select("*", { count: "exact", head: true })
+        .eq("list_id", list.id);
+      listsWithCounts.push({ ...list, lead_count: count || 0 });
+    }
+    setLists(listsWithCounts);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchLists(); }, []);
+
+  const handleProcess = async () => {
     if (!listName.trim() || !pasteData.trim()) return;
+    setSaving(true);
+
+    // Create the list
+    const { data: newList, error: listError } = await supabase
+      .from("lead_lists")
+      .insert({ name: listName, description })
+      .select()
+      .single();
+
+    if (listError || !newList) {
+      toast({ title: "Erro ao criar lista", description: listError?.message, variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+
+    // Parse pasted data
     const lines = pasteData.split("\n").filter((l) => l.trim());
-    const newList = { name: listName, description, count: lines.length - 1 }; // -1 for header
-    const updated = [...lists, newList];
-    setLists(updated);
-    localStorage.setItem("lead_lists", JSON.stringify(updated));
+    if (lines.length < 2) {
+      toast({ title: "Dados insuficientes", description: "Cole ao menos o cabeçalho e uma linha", variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+
+    const headers = lines[0].split("\t").map((h) => h.trim().toLowerCase());
+    const phoneCol = headers.findIndex((h) => h.includes("telefone") || h.includes("phone") || h.includes("número") || h.includes("numero") || h.includes("celular") || h.includes("whatsapp"));
+    const nameCol = headers.findIndex((h) => h.includes("nome") || h.includes("name"));
+
+    if (phoneCol === -1) {
+      toast({ title: "Coluna de telefone não encontrada", description: "Certifique-se de ter uma coluna 'Telefone' no cabeçalho", variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+
+    const leads = lines.slice(1).map((line) => {
+      const cols = line.split("\t").map((c) => c.trim());
+      let phone = cols[phoneCol]?.replace(/\D/g, "") || "";
+      if (!hasCountryCode && phone && !phone.startsWith("55")) {
+        phone = "55" + phone;
+      }
+      const extra: Record<string, string> = {};
+      headers.forEach((h, i) => {
+        if (i !== phoneCol && i !== nameCol && cols[i]) extra[h] = cols[i];
+      });
+      return {
+        list_id: newList.id,
+        name: nameCol >= 0 ? cols[nameCol] || "" : "",
+        phone,
+        extra_data: extra,
+      };
+    }).filter((l) => l.phone);
+
+    if (leads.length > 0) {
+      const { error: leadsError } = await supabase.from("leads").insert(leads);
+      if (leadsError) {
+        toast({ title: "Erro ao importar leads", description: leadsError.message, variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+    }
+
+    toast({ title: "Lista criada!", description: `${leads.length} contatos importados` });
     setShowCreate(false);
     setListName("");
     setDescription("");
     setPasteData("");
+    setSaving(false);
+    fetchLists();
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("lead_lists").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Lista excluída" });
+    fetchLists();
   };
 
   if (showCreate) {
@@ -49,7 +151,6 @@ const LeadsPage = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left */}
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-sm text-foreground">Nome da Lista *</Label>
@@ -59,33 +160,20 @@ const LeadsPage = () => {
                 <Label className="text-sm text-foreground">Descrição</Label>
                 <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descreva o contexto desta lista..." className="bg-secondary border-border min-h-[100px]" />
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-foreground">Pasta</Label>
-                <select className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground">
-                  <option>Sem pasta</option>
-                </select>
-              </div>
               <div className="space-y-3">
                 <Label className="text-sm text-foreground">Código do País</Label>
                 <p className="text-xs text-muted-foreground">Você se certificou de adicionar o código 55 na frente de todos os números?</p>
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => setHasCountryCode(true)}
-                    className={`flex-1 py-4 rounded-xl border text-sm font-medium transition-colors ${hasCountryCode === true ? "border-primary text-primary bg-primary/5" : "border-border text-muted-foreground"}`}
-                  >
+                  <button onClick={() => setHasCountryCode(true)} className={`flex-1 py-4 rounded-xl border text-sm font-medium transition-colors ${hasCountryCode === true ? "border-primary text-primary bg-primary/5" : "border-border text-muted-foreground"}`}>
                     ✓ Sim, já adicionei
                   </button>
-                  <button
-                    onClick={() => setHasCountryCode(false)}
-                    className={`flex-1 py-4 rounded-xl border text-sm font-medium transition-colors ${hasCountryCode === false ? "border-primary text-primary bg-primary/5" : "border-border text-muted-foreground"}`}
-                  >
+                  <button onClick={() => setHasCountryCode(false)} className={`flex-1 py-4 rounded-xl border text-sm font-medium transition-colors ${hasCountryCode === false ? "border-primary text-primary bg-primary/5" : "border-border text-muted-foreground"}`}>
                     Não, complemente pra mim
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Right */}
             <div className="space-y-4">
               <div className="flex bg-secondary rounded-lg border border-border">
                 <button onClick={() => setImportMode("upload")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-l-lg ${importMode === "upload" ? "bg-card text-foreground" : "text-muted-foreground"}`}>
@@ -107,8 +195,8 @@ const LeadsPage = () => {
                 <p className="text-xs text-muted-foreground mt-2">Copie as células da planilha (incluindo cabeçalhos) e cole aqui</p>
               </div>
 
-              <Button onClick={handleProcess} className="w-full h-11 bg-primary text-primary-foreground">
-                Processar Dados
+              <Button onClick={handleProcess} disabled={saving} className="w-full h-11 bg-primary text-primary-foreground">
+                {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processando...</> : "Processar Dados"}
               </Button>
             </div>
           </div>
@@ -130,7 +218,9 @@ const LeadsPage = () => {
           </Button>
         </div>
 
-        {lists.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        ) : lists.length === 0 ? (
           <div className="text-center py-20">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">Nenhuma lista de leads</p>
@@ -140,11 +230,14 @@ const LeadsPage = () => {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {lists.map((list, i) => (
-              <div key={i} className="bg-card border border-border rounded-xl p-5">
+            {lists.map((list) => (
+              <div key={list.id} className="bg-card border border-border rounded-xl p-5 group relative">
+                <button onClick={() => handleDelete(list.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                  <Trash2 className="w-4 h-4" />
+                </button>
                 <h3 className="font-semibold text-foreground text-sm">{list.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{list.description || "Sem descrição"}</p>
-                <p className="text-xs text-primary mt-2">{list.count} contatos</p>
+                <p className="text-xs text-primary mt-2">{list.lead_count} contatos</p>
               </div>
             ))}
           </div>
