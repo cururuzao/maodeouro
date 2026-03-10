@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       }
 
       if (codeData?.connected) {
-        return new Response(JSON.stringify({ error: "Todas as instâncias já estão conectadas" }), {
+        return new Response(JSON.stringify({ error: "Olá, tente novamente em 1 minuto pois estamos com alta demanda de vagas" }), {
           status: 503,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
