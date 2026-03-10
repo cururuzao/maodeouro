@@ -239,8 +239,8 @@ const DisparosPage = () => {
               <Label className="text-sm text-muted-foreground">Instância</Label>
               <select value={selectedInstance} onChange={(e) => setSelectedInstance(e.target.value)} className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground">
                 {instances.length === 0 && <option value="">Nenhuma instância</option>}
-                {instances.map((inst) => (
-                  <option key={inst.instance.instanceName} value={inst.instance.instanceName}>{inst.instance.instanceName}</option>
+                {instances.map((inst: any) => (
+                  <option key={inst.name} value={inst.name}>{inst.name}</option>
                 ))}
               </select>
             </div>
