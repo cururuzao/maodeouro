@@ -300,8 +300,17 @@ const DisparosPage = () => {
     if (!template) return;
 
     setSendingTest(true);
-    console.log("[Teste] Enviando para:", phone, "Template:", template.name, "Tipo:", template.type);
     try {
+      // Check instance status first
+      const status = await getStatus(inst);
+      console.log("[Teste] Status da instância:", JSON.stringify(status));
+      if (!status.connected) {
+        toast({ title: "⚠️ Instância desconectada", description: "Conecte a instância antes de enviar.", variant: "destructive" });
+        setSendingTest(false);
+        return;
+      }
+
+      console.log("[Teste] Enviando para:", phone, "Template:", template.name, "Tipo:", template.type);
       const text = replaceVariables(template.content, { name: "Teste", phone });
       console.log("[Teste] Texto:", text);
       const result = await sendTemplateMessage(inst, phone, text, template.type, template.metadata || {});
