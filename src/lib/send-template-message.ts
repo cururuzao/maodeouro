@@ -103,24 +103,36 @@ export async function sendTemplateMessage(
         return sendText(inst, phone, text);
       }
 
-      // Fallback: send buttons as formatted text for maximum compatibility
-      // (Z-API interactive button endpoints may silently fail on some plans)
-      let fullText = text;
-      for (const btn of allButtons) {
-        if (btn.type === "url" && btn.url) {
-          fullText += `\n\n🔗 ${btn.text}: ${btn.url}`;
-        } else if (btn.type === "call" && btn.phoneNumber) {
-          fullText += `\n\n📞 ${btn.text}: ${btn.phoneNumber}`;
-        } else if (btn.type === "copy" && btn.url) {
-          fullText += `\n\n📋 ${btn.text}: ${btn.url}`;
-        } else {
-          fullText += `\n\n▪️ ${btn.text}`;
-        }
+      const hasActionButtons = allButtons.some(
+        (b) => b.type === "url" || b.type === "call" || b.type === "copy"
+      );
+
+      if (hasActionButtons) {
+        // Use send-button-actions for URL, call, copy buttons
+        return sendButtonActions(
+          inst,
+          phone,
+          text,
+          metadata.footer || "",
+          allButtons.map((b) => ({
+            id: b.id,
+            label: b.text,
+            type: b.type,
+            url: b.url,
+            phoneNumber: b.phoneNumber,
+          })),
+          metadata.title
+        );
+      } else {
+        // Use send-button-list for simple reply buttons
+        return sendButtonList(
+          inst,
+          phone,
+          text,
+          metadata.footer || "",
+          allButtons.map((b) => ({ id: b.id, label: b.text }))
+        );
       }
-      if (metadata.footer) {
-        fullText += `\n\n_${metadata.footer}_`;
-      }
-      return sendText(inst, phone, fullText);
     }
 
     case "media": {
