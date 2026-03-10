@@ -71,12 +71,17 @@ const InstancesPage = () => {
       toast({ title: "Token obrigatório", description: "Informe o token de acesso da Meta para usar a Cloud API.", variant: "destructive" });
       return;
     }
+    if (newIntegration === "WHATSAPP-BUSINESS" && !businessNumber.trim()) {
+      toast({ title: "Número obrigatório", description: "Informe o número do WhatsApp Business.", variant: "destructive" });
+      return;
+    }
     setCreating(true);
     try {
       await createInstance(
         newName.trim(),
         newIntegration,
-        newIntegration === "WHATSAPP-BUSINESS" ? businessToken.trim() : undefined
+        newIntegration === "WHATSAPP-BUSINESS" ? businessToken.trim() : undefined,
+        newIntegration === "WHATSAPP-BUSINESS" ? businessNumber.trim() : undefined
       );
       toast({ title: `Instância "${newName}" criada!`, description: `Tipo: ${newIntegration === "WHATSAPP-BUSINESS" ? "Cloud API (Oficial)" : "Baileys"}` });
       setNewName("");
