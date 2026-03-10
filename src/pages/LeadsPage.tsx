@@ -17,6 +17,7 @@ interface LeadList {
 }
 
 const LeadsPage = () => {
+  const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [listName, setListName] = useState("");
   const [description, setDescription] = useState("");
