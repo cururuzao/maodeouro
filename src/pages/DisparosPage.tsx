@@ -7,7 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchInstances, sendTextMessage, type Instance } from "@/lib/evolution-api";
+import { fetchInstances, type Instance } from "@/lib/evolution-api";
+import { sendTemplateMessage, replaceVariables } from "@/lib/send-template-message";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface LeadList {
