@@ -70,45 +70,48 @@ export async function sendTemplateMessage(
         return sendTextMessage(instanceName, number, text);
       }
 
-      // Baileys only supports "reply" buttons.
-      // For URL/call buttons, append info to the message text.
-      const replyButtons = allButtons
-        .filter((btn) => btn.type === "reply" || !btn.type)
-        .map((btn) => ({
+      // Baileys does NOT support interactive URL/call buttons.
+      // We build a beautifully formatted text message instead,
+      // with WhatsApp markdown and clickable links.
+
+      const replyButtons = allButtons.filter((btn) => btn.type === "reply" || !btn.type);
+      const urlButtons = allButtons.filter((btn) => btn.type === "url" && btn.url);
+      const callButtons = allButtons.filter((btn) => btn.type === "call" && btn.phoneNumber);
+
+      // If ALL buttons are reply-type, use native sendButtons
+      if (urlButtons.length === 0 && callButtons.length === 0 && replyButtons.length > 0) {
+        const nativeButtons = replyButtons.map((btn) => ({
           buttonId: btn.id,
           buttonText: { displayText: btn.text },
         }));
-
-      // Build extra text for URL/call buttons
-      const extraLines: string[] = [];
-      allButtons.forEach((btn) => {
-        if (btn.type === "url" && btn.url) {
-          extraLines.push(`\n🔗 ${btn.text}: ${btn.url}`);
-        }
-        if (btn.type === "call" && btn.phoneNumber) {
-          extraLines.push(`\n📞 ${btn.text}: ${btn.phoneNumber}`);
-        }
-      });
-
-      const fullText = text + (extraLines.length > 0 ? "\n" + extraLines.join("") : "");
-
-      // If we have reply buttons, send with sendButtons
-      if (replyButtons.length > 0) {
-        return sendButtons(
-          instanceName,
-          number,
-          fullText,
-          "",
-          metadata.footer || "",
-          replyButtons
-        );
+        return sendButtons(instanceName, number, text, "", metadata.footer || "", nativeButtons);
       }
 
-      // Otherwise just send as text with links
-      const finalText = metadata.footer
-        ? fullText + "\n\n_" + metadata.footer + "_"
-        : fullText;
-      return sendTextMessage(instanceName, number, finalText);
+      // Otherwise, build formatted text with links
+      let formattedText = text;
+
+      // Add URL buttons as clickable links
+      if (urlButtons.length > 0) {
+        formattedText += "\n";
+        urlButtons.forEach((btn) => {
+          formattedText += `\n🔗 *${btn.text}*\n${btn.url}`;
+        });
+      }
+
+      // Add call buttons
+      if (callButtons.length > 0) {
+        formattedText += "\n";
+        callButtons.forEach((btn) => {
+          formattedText += `\n📞 *${btn.text}*: ${btn.phoneNumber}`;
+        });
+      }
+
+      // Add footer
+      if (metadata.footer) {
+        formattedText += `\n\n_${metadata.footer}_`;
+      }
+
+      return sendTextMessage(instanceName, number, formattedText);
     }
 
     case "list": {
