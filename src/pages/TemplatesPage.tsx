@@ -167,14 +167,14 @@ const TemplatesPage = () => {
     : null;
 
   // Button helpers
-  const addButton = () => {
+  const addButton = (btnType: "reply" | "url" | "call" = "reply") => {
     const buttons = meta.buttons || [];
     if (buttons.length >= 3) return;
-    setMeta({ ...meta, buttons: [...buttons, { id: `btn_${Date.now()}`, text: "" }] });
+    setMeta({ ...meta, buttons: [...buttons, { id: `btn_${Date.now()}`, text: "", type: btnType }] });
   };
-  const updateButton = (index: number, text: string) => {
+  const updateButton = (index: number, field: string, value: string) => {
     const buttons = [...(meta.buttons || [])];
-    buttons[index] = { ...buttons[index], text };
+    buttons[index] = { ...buttons[index], [field]: value };
     setMeta({ ...meta, buttons });
   };
   const removeButton = (index: number) => {
