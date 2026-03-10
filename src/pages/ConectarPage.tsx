@@ -131,24 +131,25 @@ const ConectarPage = () => {
     stopPolling();
 
     try {
-      const status = await getStatus(selectedInst);
-      if (status.connected) {
-        toast({ title: "Instância já conectada!" });
-        setConnectionStatus("connected");
-        setGenerating(false);
-        return;
-      }
-
+      console.log("[ConectarPage] Requesting pairing code for:", cleanPhone);
       const result = await getPhoneCode(selectedInst, cleanPhone);
+      console.log("[ConectarPage] Result:", JSON.stringify(result));
+      
       if (result?.value) {
         setPairingCode(result.value);
         toast({ title: "Código gerado! 🔑", description: "Digite este código no seu WhatsApp para conectar." });
         startPolling();
+      } else if ((result as any)?.connected) {
+        toast({ title: "Instância já conectada!" });
+        setConnectionStatus("connected");
       } else {
-        const errorMsg = (result as any)?.error || "Tente novamente em alguns segundos.";
+        const errorMsg = (result as any)?.error 
+          || (result as any)?.message 
+          || JSON.stringify(result);
         toast({ title: "Erro ao gerar código", description: errorMsg, variant: "destructive" });
       }
     } catch (err: any) {
+      console.error("[ConectarPage] Error:", err);
       toast({ title: "Erro ao gerar código", description: err.message, variant: "destructive" });
     }
     setGenerating(false);
