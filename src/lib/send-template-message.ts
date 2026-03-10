@@ -70,48 +70,40 @@ export async function sendTemplateMessage(
         return sendTextMessage(instanceName, number, text);
       }
 
-      // Baileys does NOT support interactive URL/call buttons.
-      // We build a beautifully formatted text message instead,
-      // with WhatsApp markdown and clickable links.
+      // Build buttons in the official Evolution API format
+      const apiButtons = allButtons.map((btn) => {
+        if (btn.type === "url" && btn.url) {
+          return { type: "url", displayText: btn.text, url: btn.url };
+        }
+        if (btn.type === "call" && btn.phoneNumber) {
+          return { type: "call", displayText: btn.text, phoneNumber: btn.phoneNumber };
+        }
+        // reply
+        return { type: "reply", displayText: btn.text, id: btn.id };
+      });
 
-      const replyButtons = allButtons.filter((btn) => btn.type === "reply" || !btn.type);
-      const urlButtons = allButtons.filter((btn) => btn.type === "url" && btn.url);
-      const callButtons = allButtons.filter((btn) => btn.type === "call" && btn.phoneNumber);
+      // Use raw fetch to send with the correct format
+      const config = await import("@/lib/evolution-api").then((m) => m.loadConfig());
+      if (!config) throw new Error("Evolution API não configurada");
 
-      // If ALL buttons are reply-type, use native sendButtons
-      if (urlButtons.length === 0 && callButtons.length === 0 && replyButtons.length > 0) {
-        const nativeButtons = replyButtons.map((btn) => ({
-          buttonId: btn.id,
-          buttonText: { displayText: btn.text },
-        }));
-        return sendButtons(instanceName, number, text, "", metadata.footer || "", nativeButtons);
+      const url = `${config.baseUrl.replace(/\/$/, "")}/message/sendButtons/${instanceName}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: config.apiKey },
+        body: JSON.stringify({
+          number,
+          title: text,
+          description: "",
+          footer: metadata.footer || "",
+          buttons: apiButtons,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Erro ${res.status}: ${errText}`);
       }
-
-      // Otherwise, build formatted text with links
-      let formattedText = text;
-
-      // Add URL buttons as clickable links
-      if (urlButtons.length > 0) {
-        formattedText += "\n";
-        urlButtons.forEach((btn) => {
-          formattedText += `\n🔗 *${btn.text}*\n${btn.url}`;
-        });
-      }
-
-      // Add call buttons
-      if (callButtons.length > 0) {
-        formattedText += "\n";
-        callButtons.forEach((btn) => {
-          formattedText += `\n📞 *${btn.text}*: ${btn.phoneNumber}`;
-        });
-      }
-
-      // Add footer
-      if (metadata.footer) {
-        formattedText += `\n\n_${metadata.footer}_`;
-      }
-
-      return sendTextMessage(instanceName, number, formattedText);
+      return res.json();
     }
 
     case "list": {
