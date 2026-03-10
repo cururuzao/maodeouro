@@ -14,7 +14,11 @@ import {
   Wrench,
   Shield,
   LogOut,
+  Copy,
+  Check,
 } from "lucide-react";
+
+const TEST_CODE = "F46f72bcf09804ebabf2b24ef8e4bd57dS";
 
 
 const sections = [
