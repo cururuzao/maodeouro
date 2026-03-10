@@ -47,7 +47,7 @@ const TemplatesPage = () => {
   const handleCreate = async () => {
     if (!name.trim() || !content.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("templates").insert({ name, type, content });
+    const { error } = await supabase.from("templates").insert({ name, type, content, user_id: user?.id });
     if (error) {
       toast({ title: "Erro ao criar template", description: error.message, variant: "destructive" });
     } else {

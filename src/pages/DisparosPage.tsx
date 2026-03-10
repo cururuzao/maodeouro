@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInstances, sendTextMessage, type Instance } from "@/lib/evolution-api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LeadList {
   id: string;
