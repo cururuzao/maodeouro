@@ -197,6 +197,15 @@ export async function sendButtonList(inst: ZApiInstance, phone: string, message:
   return apiPost(inst, "send-button-list", { phone, message, footer, buttonList: { buttons: buttons.map(b => ({ id: b.id, label: b.label })) } });
 }
 
+export async function sendButtonActions(inst: ZApiInstance, phone: string, message: string, footer: string, buttons: { id: string; label: string; type: string; url?: string; phoneNumber?: string }[]): Promise<any> {
+  const buttonActions = buttons.map(b => {
+    if (b.type === "url") return { id: b.id, type: "URL", url: b.url, label: b.label };
+    if (b.type === "call") return { id: b.id, type: "CALL", phoneNumber: b.phoneNumber, label: b.label };
+    return { id: b.id, type: "REPLY", label: b.label };
+  });
+  return apiPost(inst, "send-button-actions", { phone, message, footer, buttonActions });
+}
+
 export async function sendOptionList(inst: ZApiInstance, phone: string, title: string, message: string, footer: string, sections: { title: string; rows: { title: string; description?: string; rowId: string }[] }[]): Promise<any> {
   return apiPost(inst, "send-option-list", { phone, optionList: { title, message, footer, optionSections: sections } });
 }
