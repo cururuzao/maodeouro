@@ -98,7 +98,10 @@ const ConectarPage = () => {
         return;
       }
 
-      const cleanPhone = phone.replace(/\D/g, "");
+      let cleanPhone = phone.replace(/\D/g, "");
+      if (!cleanPhone.startsWith("55")) {
+        cleanPhone = "55" + cleanPhone;
+      }
       const result = await getPhoneCode(selectedInst, cleanPhone);
       if (result?.value) {
         setPairingCode(result.value);
