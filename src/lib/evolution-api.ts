@@ -124,7 +124,7 @@ export async function createInstance(instanceName: string): Promise<any> {
     method: "POST",
     body: JSON.stringify({
       instanceName,
-      qrcode: true,
+      qrcode: false,
       integration: "WHATSAPP-BAILEYS",
     }),
   });
