@@ -86,7 +86,7 @@ const AdminPage = () => {
       setDisparos(disparosRes.data || []);
       setTemplates(templatesRes.data || []);
       setLeadLists(listsRes.data || []);
-      setAllUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+      setAllUsers(Array.isArray(usersRes.data) ? (usersRes.data as unknown as UserInfo[]) : []);
     } catch (e: any) {
       toast({ title: "Erro ao carregar dados", description: e.message, variant: "destructive" });
     } finally {
