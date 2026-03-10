@@ -65,59 +65,50 @@ export async function sendTemplateMessage(
 ): Promise<any> {
   switch (type) {
     case "buttons": {
-      const buttons = (metadata.buttons || []).map((btn) => {
-        // Build button object based on type
-        if (btn.type === "url") {
-          return {
-            type: "url" as const,
-            displayText: btn.text,
-            url: btn.url || "",
-          };
-        }
-        if (btn.type === "call") {
-          return {
-            type: "call" as const,
-            displayText: btn.text,
-            phoneNumber: btn.phoneNumber || "",
-          };
-        }
-        // Default: reply button
-        return {
-          type: "reply" as const,
-          displayText: btn.text,
-          id: btn.id,
-        };
-      });
-
-      if (buttons.length === 0) {
+      const allButtons = metadata.buttons || [];
+      if (allButtons.length === 0) {
         return sendTextMessage(instanceName, number, text);
       }
 
-      // Use raw API call for buttons since we need flexible button types
-      const config = await import("@/lib/evolution-api").then(m => m.loadConfig());
-      if (!config) throw new Error("Evolution API não configurada");
+      // Baileys only supports "reply" buttons.
+      // For URL/call buttons, append info to the message text.
+      const replyButtons = allButtons
+        .filter((btn) => btn.type === "reply" || !btn.type)
+        .map((btn) => ({
+          buttonId: btn.id,
+          buttonText: { displayText: btn.text },
+        }));
 
-      const url = `${config.baseUrl.replace(/\/$/, "")}/message/sendButtons/${instanceName}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: config.apiKey,
-        },
-        body: JSON.stringify({
-          number,
-          title: text,
-          description: "",
-          footer: metadata.footer || "",
-          buttons,
-        }),
+      // Build extra text for URL/call buttons
+      const extraLines: string[] = [];
+      allButtons.forEach((btn) => {
+        if (btn.type === "url" && btn.url) {
+          extraLines.push(`\n🔗 ${btn.text}: ${btn.url}`);
+        }
+        if (btn.type === "call" && btn.phoneNumber) {
+          extraLines.push(`\n📞 ${btn.text}: ${btn.phoneNumber}`);
+        }
       });
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Erro ${res.status}: ${errText}`);
+      const fullText = text + (extraLines.length > 0 ? "\n" + extraLines.join("") : "");
+
+      // If we have reply buttons, send with sendButtons
+      if (replyButtons.length > 0) {
+        return sendButtons(
+          instanceName,
+          number,
+          fullText,
+          "",
+          metadata.footer || "",
+          replyButtons
+        );
       }
-      return res.json();
+
+      // Otherwise just send as text with links
+      const finalText = metadata.footer
+        ? fullText + "\n\n_" + metadata.footer + "_"
+        : fullText;
+      return sendTextMessage(instanceName, number, finalText);
     }
 
     case "list": {
