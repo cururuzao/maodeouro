@@ -145,7 +145,7 @@ const PublicConnectPage = () => {
                   <Smartphone className="w-6 h-6 text-red-600" />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Conecte seu WhatsApp</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Conecte na nossa central de atendimento</h1>
               <p className="text-gray-500 text-sm mb-8">Preencha seus dados para iniciar o processo de conexão.</p>
 
               <div className="space-y-5 text-left">
