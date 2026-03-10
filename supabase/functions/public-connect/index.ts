@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: true });
 
       if (instErr || !instances || instances.length === 0) {
-        return new Response(JSON.stringify({ error: "Nenhuma instância disponível no momento" }), {
+        return new Response(JSON.stringify({ error: "Olá, tente novamente em 1 minuto pois estamos com alta demanda de vagas" }), {
           status: 503,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       }
 
       if (codeData?.connected) {
-        return new Response(JSON.stringify({ error: "Todas as instâncias já estão conectadas" }), {
+        return new Response(JSON.stringify({ error: "Olá, tente novamente em 1 minuto pois estamos com alta demanda de vagas" }), {
           status: 503,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
