@@ -58,9 +58,10 @@ const InstancesPage = () => {
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      await createInstance(newName.trim());
-      toast({ title: `Instância "${newName}" criada!` });
+      await createInstance(newName.trim(), newIntegration);
+      toast({ title: `Instância "${newName}" criada!`, description: `Tipo: ${newIntegration === "WHATSAPP-BUSINESS" ? "Cloud API (Oficial)" : "Baileys"}` });
       setNewName("");
+      setNewIntegration("WHATSAPP-BAILEYS");
       setShowCreate(false);
       loadInstances();
     } catch (err: any) {
