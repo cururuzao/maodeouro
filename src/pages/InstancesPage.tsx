@@ -170,6 +170,25 @@ const InstancesPage = () => {
               </button>
             </div>
           </div>
+          {newIntegration === "WHATSAPP-BUSINESS" && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">Token de acesso da Meta</p>
+              <Input
+                value={businessToken}
+                onChange={(e) => setBusinessToken(e.target.value)}
+                placeholder="Cole aqui o token permanente do WhatsApp Business"
+                className="h-10 bg-secondary border-border font-mono text-xs"
+                type="password"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Obtenha em{" "}
+                <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                  Meta Business → Usuários do sistema
+                </a>
+                {" "}→ Gerar token com permissão <code className="bg-secondary px-1 rounded text-[10px]">whatsapp_business_messaging</code>
+              </p>
+            </div>
+          )}
           <div className="flex gap-3">
             <Button onClick={handleCreate} disabled={creating} size="sm" className="h-10 px-5">
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar"}
