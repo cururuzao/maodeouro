@@ -187,7 +187,7 @@ const InstancesPage = () => {
             </div>
           </div>
           {newIntegration === "WHATSAPP-BUSINESS" && (
-            <div className="space-y-2">
+             <div className="space-y-2">
               <p className="text-xs text-muted-foreground font-medium">Token de acesso da Meta</p>
               <Input
                 value={businessToken}
@@ -202,6 +202,18 @@ const InstancesPage = () => {
                   Meta Business → Usuários do sistema
                 </a>
                 {" "}→ Gerar token com permissão <code className="bg-secondary px-1 rounded text-[10px]">whatsapp_business_messaging</code>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-medium">Número do WhatsApp Business</p>
+              <Input
+                value={businessNumber}
+                onChange={(e) => setBusinessNumber(e.target.value)}
+                placeholder="5511999999999"
+                className="h-10 bg-secondary border-border"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Número com código do país, sem espaços ou caracteres especiais
               </p>
             </div>
           )}
