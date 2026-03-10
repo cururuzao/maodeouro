@@ -128,11 +128,18 @@ export async function createInstance(
 ): Promise<any> {
   const body: Record<string, any> = {
     instanceName,
-    qrcode: false,
     integration,
+    qrcode: integration === "WHATSAPP-BAILEYS",
+    rejectCall: false,
+    groupsIgnore: false,
+    alwaysOnline: false,
+    readMessages: false,
+    readStatus: false,
+    syncFullHistory: false,
   };
   if (integration === "WHATSAPP-BUSINESS" && token) {
     body.token = token;
+    body.number = "";
   }
   return apiCall("/instance/create", {
     method: "POST",
