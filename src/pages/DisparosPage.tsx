@@ -10,6 +10,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import {
   listInstances,
+  getStatus,
+  disconnect as disconnectInstance,
+  removeInstance,
   type ZApiInstance,
   muteChat,
   archiveChat,
