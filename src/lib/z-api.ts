@@ -123,11 +123,11 @@ export async function restoreSession(inst: ZApiInstance): Promise<any> {
   return apiGet(inst, "restore-session");
 }
 
-export async function getQrCode(inst: ZApiInstance): Promise<{ value: string }> {
+export async function getQrCode(inst: ZApiInstance): Promise<{ value?: string; code?: string }> {
   return apiGet(inst, "qr-code/image");
 }
 
-export async function getPhoneCode(inst: ZApiInstance, phone: string): Promise<{ value: string }> {
+export async function getPhoneCode(inst: ZApiInstance, phone: string): Promise<{ value?: string; code?: string }> {
   return apiGet(inst, `phone-code/${phone}`);
 }
 
