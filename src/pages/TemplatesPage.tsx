@@ -1,21 +1,30 @@
 import { useState, useEffect, useMemo } from "react";
-import { FileText, Plus, FolderOpen, Trash2, Loader2, X, Image, Video, File, MapPin, Contact, Variable } from "lucide-react";
+import {
+  FileText, Plus, FolderOpen, Trash2, Loader2, X, Image, Video, File, MapPin,
+  Contact, Variable, Link2, Sticker, Film, BarChart3, QrCode, MessageSquare,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 const TEMPLATE_TYPES = [
-  { value: "text", label: "Texto" },
-  { value: "buttons", label: "Botões" },
-  { value: "list", label: "Lista" },
-  { value: "media", label: "Mídia" },
-  { value: "contact", label: "Contato" },
-  { value: "location", label: "Localização" },
+  { value: "text", label: "Texto", icon: MessageSquare },
+  { value: "buttons", label: "Botões", icon: FileText },
+  { value: "list", label: "Lista", icon: FileText },
+  { value: "media", label: "Mídia", icon: Image },
+  { value: "link", label: "Link", icon: Link2 },
+  { value: "contact", label: "Contato", icon: Contact },
+  { value: "location", label: "Localização", icon: MapPin },
+  { value: "sticker", label: "Sticker", icon: Sticker },
+  { value: "gif", label: "GIF", icon: Film },
+  { value: "poll", label: "Enquete", icon: BarChart3 },
+  { value: "pix", label: "PIX", icon: QrCode },
 ];
 
 const VARIABLES = [
@@ -30,26 +39,39 @@ const VARIABLES = [
 interface TemplateButton {
   id: string;
   text: string;
-  type: "reply" | "url" | "call";
+  type: "reply" | "url" | "call" | "copy";
   url?: string;
   phoneNumber?: string;
 }
 
 interface TemplateMetadata {
   footer?: string;
+  title?: string;
   buttons?: TemplateButton[];
   listButtonText?: string;
   listSections?: { title: string; rows: { id: string; title: string; description: string }[] }[];
   mediaType?: "image" | "video" | "document" | "audio";
   mediaUrl?: string;
   fileName?: string;
+  viewOnce?: boolean;
   contactName?: string;
   contactNumber?: string;
   latitude?: string;
   longitude?: string;
   locationName?: string;
   locationAddress?: string;
-  // Profile customization (applied when disparo starts)
+  linkUrl?: string;
+  linkTitle?: string;
+  linkDescription?: string;
+  linkImage?: string;
+  stickerUrl?: string;
+  stickerAuthor?: string;
+  gifUrl?: string;
+  pollOptions?: { name: string }[];
+  pollMaxOptions?: number;
+  pixKey?: string;
+  pixType?: string;
+  merchantName?: string;
   profileName?: string;
   profilePictureUrl?: string;
   profileDescription?: string;
@@ -103,10 +125,7 @@ const TemplatesPage = () => {
     setEditingTemplate(null);
   };
 
-  const openCreate = () => {
-    resetForm();
-    setShowCreate(true);
-  };
+  const openCreate = () => { resetForm(); setShowCreate(true); };
 
   const openEdit = (t: Template) => {
     setName(t.name);
@@ -118,9 +137,11 @@ const TemplatesPage = () => {
   };
 
   const handleSave = async () => {
-    if (!name.trim() || !content.trim()) return;
+    if (!name.trim()) {
+      toast({ title: "Digite o nome do template", variant: "destructive" });
+      return;
+    }
     setSaving(true);
-
     const payload = { name, type, content, metadata: meta as any, user_id: user?.id };
 
     if (editingTemplate) {
@@ -149,16 +170,11 @@ const TemplatesPage = () => {
     }
   };
 
-  const insertVariable = (tag: string) => {
-    setContent((prev) => prev + tag);
-  };
+  const insertVariable = (tag: string) => setContent((prev) => prev + tag);
 
-  // Live preview with sample data
   const previewContent = useMemo(() => {
     let text = content;
-    VARIABLES.forEach((v) => {
-      text = text.split(v.tag).join(v.sample);
-    });
+    VARIABLES.forEach((v) => { text = text.split(v.tag).join(v.sample); });
     return text;
   }, [content]);
 
@@ -170,8 +186,8 @@ const TemplatesPage = () => {
       })()
     : null;
 
-  // Button helpers
-  const addButton = (btnType: "reply" | "url" | "call" = "reply") => {
+  // ─── Button helpers ────────────────────────────────
+  const addButton = (btnType: TemplateButton["type"] = "reply") => {
     const buttons = meta.buttons || [];
     if (buttons.length >= 3) return;
     setMeta({ ...meta, buttons: [...buttons, { id: `btn_${Date.now()}`, text: "", type: btnType }] });
@@ -187,7 +203,7 @@ const TemplatesPage = () => {
     setMeta({ ...meta, buttons });
   };
 
-  // List helpers
+  // ─── List helpers ────────────────────────────────
   const addSection = () => {
     const sections = meta.listSections || [];
     setMeta({ ...meta, listSections: [...sections, { title: "", rows: [{ id: `row_${Date.now()}`, title: "", description: "" }] }] });
@@ -214,23 +230,45 @@ const TemplatesPage = () => {
     setMeta({ ...meta, listSections: sections });
   };
 
-  // ─── Render ──────────────────────────────────────────────
+  // ─── Poll helpers ────────────────────────────────
+  const addPollOption = () => {
+    const opts = meta.pollOptions || [];
+    if (opts.length >= 12) return;
+    setMeta({ ...meta, pollOptions: [...opts, { name: "" }] });
+  };
+  const updatePollOption = (i: number, value: string) => {
+    const opts = [...(meta.pollOptions || [])];
+    opts[i] = { name: value };
+    setMeta({ ...meta, pollOptions: opts });
+  };
+  const removePollOption = (i: number) => {
+    const opts = [...(meta.pollOptions || [])];
+    opts.splice(i, 1);
+    setMeta({ ...meta, pollOptions: opts });
+  };
 
+  // ─── Type-specific form fields ────────────────────
   const renderTypeFields = () => {
     switch (type) {
       case "buttons":
         return (
           <div className="space-y-3">
-            <Label className="text-sm text-muted-foreground">Rodapé (footer)</Label>
-            <Input value={meta.footer || ""} onChange={(e) => setMeta({ ...meta, footer: e.target.value })} placeholder="Texto do rodapé" className="bg-secondary border-border" />
-
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Título (opcional)</Label>
+              <Input value={meta.title || ""} onChange={(e) => setMeta({ ...meta, title: e.target.value })} placeholder="Título acima da mensagem" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Rodapé (footer)</Label>
+              <Input value={meta.footer || ""} onChange={(e) => setMeta({ ...meta, footer: e.target.value })} placeholder="Texto do rodapé" className="bg-secondary border-border" />
+            </div>
             <div className="flex items-center justify-between">
               <Label className="text-sm text-muted-foreground">Botões (máx. 3)</Label>
               {(meta.buttons?.length || 0) < 3 && (
-                <div className="flex gap-1">
+                <div className="flex gap-1 flex-wrap">
                   <Button variant="ghost" size="sm" onClick={() => addButton("reply")}><Plus className="w-3 h-3 mr-1" />Resposta</Button>
                   <Button variant="ghost" size="sm" onClick={() => addButton("url")}><Plus className="w-3 h-3 mr-1" />Link</Button>
                   <Button variant="ghost" size="sm" onClick={() => addButton("call")}><Plus className="w-3 h-3 mr-1" />Ligar</Button>
+                  <Button variant="ghost" size="sm" onClick={() => addButton("copy")}><Plus className="w-3 h-3 mr-1" />Copiar</Button>
                 </div>
               )}
             </div>
@@ -238,7 +276,7 @@ const TemplatesPage = () => {
               <div key={i} className="bg-secondary/50 rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground uppercase">
-                    {btn.type === "url" ? "🔗 Link" : btn.type === "call" ? "📞 Ligar" : "💬 Resposta"}
+                    {btn.type === "url" ? "🔗 Link" : btn.type === "call" ? "📞 Ligar" : btn.type === "copy" ? "📋 Copiar" : "💬 Resposta"}
                   </span>
                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeButton(i)}><X className="w-3 h-3" /></Button>
                 </div>
@@ -249,20 +287,26 @@ const TemplatesPage = () => {
                 {btn.type === "call" && (
                   <Input value={btn.phoneNumber || ""} onChange={(e) => updateButton(i, "phoneNumber", e.target.value)} placeholder="5511999999999" className="bg-secondary border-border" />
                 )}
+                {btn.type === "copy" && (
+                  <Input value={btn.url || ""} onChange={(e) => updateButton(i, "url", e.target.value)} placeholder="Texto para copiar (ex: código, cupom)" className="bg-secondary border-border" />
+                )}
               </div>
             ))}
+            <p className="text-[10px] text-muted-foreground">⚠️ Botões são enviados como texto formatado para compatibilidade máxima.</p>
           </div>
         );
 
       case "list":
         return (
           <div className="space-y-3">
-            <Label className="text-sm text-muted-foreground">Rodapé (footer)</Label>
-            <Input value={meta.footer || ""} onChange={(e) => setMeta({ ...meta, footer: e.target.value })} placeholder="Texto do rodapé" className="bg-secondary border-border" />
-
-            <Label className="text-sm text-muted-foreground">Texto do botão da lista</Label>
-            <Input value={meta.listButtonText || ""} onChange={(e) => setMeta({ ...meta, listButtonText: e.target.value })} placeholder="Ver opções" className="bg-secondary border-border" />
-
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Rodapé (footer)</Label>
+              <Input value={meta.footer || ""} onChange={(e) => setMeta({ ...meta, footer: e.target.value })} placeholder="Texto do rodapé" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Texto do botão da lista</Label>
+              <Input value={meta.listButtonText || ""} onChange={(e) => setMeta({ ...meta, listButtonText: e.target.value })} placeholder="Ver opções" className="bg-secondary border-border" />
+            </div>
             <div className="flex items-center justify-between">
               <Label className="text-sm text-muted-foreground">Seções</Label>
               <Button variant="ghost" size="sm" onClick={addSection}><Plus className="w-3 h-3 mr-1" />Seção</Button>
@@ -288,33 +332,68 @@ const TemplatesPage = () => {
       case "media":
         return (
           <div className="space-y-3">
-            <Label className="text-sm text-muted-foreground">Tipo de mídia</Label>
-            <select value={meta.mediaType || "image"} onChange={(e) => setMeta({ ...meta, mediaType: e.target.value as any })} className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground">
-              <option value="image">Imagem</option>
-              <option value="video">Vídeo</option>
-              <option value="document">Documento</option>
-              <option value="audio">Áudio</option>
-            </select>
-            <Label className="text-sm text-muted-foreground">URL da mídia</Label>
-            <Input value={meta.mediaUrl || ""} onChange={(e) => setMeta({ ...meta, mediaUrl: e.target.value })} placeholder="https://..." className="bg-secondary border-border" />
-            {(meta.mediaType === "document") && (
-              <>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Tipo de mídia</Label>
+              <select value={meta.mediaType || "image"} onChange={(e) => setMeta({ ...meta, mediaType: e.target.value as any })} className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground">
+                <option value="image">🖼️ Imagem</option>
+                <option value="video">🎬 Vídeo</option>
+                <option value="document">📄 Documento</option>
+                <option value="audio">🎵 Áudio</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">URL da mídia</Label>
+              <Input value={meta.mediaUrl || ""} onChange={(e) => setMeta({ ...meta, mediaUrl: e.target.value })} placeholder="https://... ou base64" className="bg-secondary border-border" />
+            </div>
+            {meta.mediaType === "document" && (
+              <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Nome do arquivo</Label>
                 <Input value={meta.fileName || ""} onChange={(e) => setMeta({ ...meta, fileName: e.target.value })} placeholder="documento.pdf" className="bg-secondary border-border" />
-              </>
+              </div>
             )}
-            <Label className="text-sm text-muted-foreground">Rodapé (footer)</Label>
-            <Input value={meta.footer || ""} onChange={(e) => setMeta({ ...meta, footer: e.target.value })} placeholder="Texto do rodapé" className="bg-secondary border-border" />
+            {(meta.mediaType === "image" || meta.mediaType === "video") && (
+              <div className="flex items-center gap-2">
+                <Switch checked={meta.viewOnce || false} onCheckedChange={(v) => setMeta({ ...meta, viewOnce: v })} />
+                <Label className="text-sm text-muted-foreground">Visualização única</Label>
+              </div>
+            )}
+          </div>
+        );
+
+      case "link":
+        return (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">URL do link</Label>
+              <Input value={meta.linkUrl || ""} onChange={(e) => setMeta({ ...meta, linkUrl: e.target.value })} placeholder="https://seusite.com" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Título do link</Label>
+              <Input value={meta.linkTitle || ""} onChange={(e) => setMeta({ ...meta, linkTitle: e.target.value })} placeholder="Título exibido no preview" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Descrição do link</Label>
+              <Input value={meta.linkDescription || ""} onChange={(e) => setMeta({ ...meta, linkDescription: e.target.value })} placeholder="Descrição exibida no preview" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Imagem do preview (opcional)</Label>
+              <Input value={meta.linkImage || ""} onChange={(e) => setMeta({ ...meta, linkImage: e.target.value })} placeholder="https://... URL da imagem" className="bg-secondary border-border" />
+            </div>
+            <p className="text-[10px] text-muted-foreground">💡 Inclua a URL do link no final do conteúdo da mensagem também.</p>
           </div>
         );
 
       case "contact":
         return (
           <div className="space-y-3">
-            <Label className="text-sm text-muted-foreground">Nome do contato</Label>
-            <Input value={meta.contactName || ""} onChange={(e) => setMeta({ ...meta, contactName: e.target.value })} placeholder="João Silva" className="bg-secondary border-border" />
-            <Label className="text-sm text-muted-foreground">Número do contato</Label>
-            <Input value={meta.contactNumber || ""} onChange={(e) => setMeta({ ...meta, contactNumber: e.target.value })} placeholder="5511999999999" className="bg-secondary border-border" />
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Nome do contato</Label>
+              <Input value={meta.contactName || ""} onChange={(e) => setMeta({ ...meta, contactName: e.target.value })} placeholder="João Silva" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Número do contato</Label>
+              <Input value={meta.contactNumber || ""} onChange={(e) => setMeta({ ...meta, contactNumber: e.target.value })} placeholder="5511999999999" className="bg-secondary border-border" />
+            </div>
           </div>
         );
 
@@ -331,28 +410,107 @@ const TemplatesPage = () => {
                 <Input value={meta.longitude || ""} onChange={(e) => setMeta({ ...meta, longitude: e.target.value })} placeholder="-46.6333" className="bg-secondary border-border" />
               </div>
             </div>
-            <Label className="text-sm text-muted-foreground">Nome do local</Label>
-            <Input value={meta.locationName || ""} onChange={(e) => setMeta({ ...meta, locationName: e.target.value })} placeholder="Escritório" className="bg-secondary border-border" />
-            <Label className="text-sm text-muted-foreground">Endereço</Label>
-            <Input value={meta.locationAddress || ""} onChange={(e) => setMeta({ ...meta, locationAddress: e.target.value })} placeholder="Av. Paulista, 1000" className="bg-secondary border-border" />
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Nome do local</Label>
+              <Input value={meta.locationName || ""} onChange={(e) => setMeta({ ...meta, locationName: e.target.value })} placeholder="Escritório" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Endereço</Label>
+              <Input value={meta.locationAddress || ""} onChange={(e) => setMeta({ ...meta, locationAddress: e.target.value })} placeholder="Av. Paulista, 1000" className="bg-secondary border-border" />
+            </div>
+          </div>
+        );
+
+      case "sticker":
+        return (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">URL do sticker (imagem ou base64)</Label>
+              <Input value={meta.stickerUrl || ""} onChange={(e) => setMeta({ ...meta, stickerUrl: e.target.value })} placeholder="https://... (PNG/WebP quadrado)" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Autor do sticker (opcional)</Label>
+              <Input value={meta.stickerAuthor || ""} onChange={(e) => setMeta({ ...meta, stickerAuthor: e.target.value })} placeholder="Nome do autor" className="bg-secondary border-border" />
+            </div>
+            <p className="text-[10px] text-muted-foreground">💡 Stickers devem ser imagens quadradas (512x512 recomendado).</p>
+          </div>
+        );
+
+      case "gif":
+        return (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">URL do GIF (arquivo MP4)</Label>
+              <Input value={meta.gifUrl || ""} onChange={(e) => setMeta({ ...meta, gifUrl: e.target.value })} placeholder="https://... (deve ser MP4)" className="bg-secondary border-border" />
+            </div>
+            <p className="text-[10px] text-muted-foreground">⚠️ O WhatsApp aceita GIFs apenas em formato MP4. O conteúdo da mensagem será a legenda.</p>
+          </div>
+        );
+
+      case "poll":
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={(meta.pollMaxOptions || 0) === 1}
+                onCheckedChange={(v) => setMeta({ ...meta, pollMaxOptions: v ? 1 : undefined })}
+              />
+              <Label className="text-sm text-muted-foreground">Escolha única (senão múltipla)</Label>
+            </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm text-muted-foreground">Opções (mín. 2, máx. 12)</Label>
+              {(meta.pollOptions?.length || 0) < 12 && (
+                <Button variant="ghost" size="sm" onClick={addPollOption}><Plus className="w-3 h-3 mr-1" />Opção</Button>
+              )}
+            </div>
+            {(meta.pollOptions || []).map((opt, i) => (
+              <div key={i} className="flex gap-2 items-center">
+                <Input
+                  value={opt.name}
+                  onChange={(e) => updatePollOption(i, e.target.value)}
+                  placeholder={`Opção ${i + 1}`}
+                  className="bg-secondary border-border flex-1"
+                />
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removePollOption(i)}><X className="w-3 h-3" /></Button>
+              </div>
+            ))}
+            <p className="text-[10px] text-muted-foreground">💡 O conteúdo da mensagem será a pergunta da enquete.</p>
+          </div>
+        );
+
+      case "pix":
+        return (
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Chave PIX</Label>
+              <Input value={meta.pixKey || ""} onChange={(e) => setMeta({ ...meta, pixKey: e.target.value })} placeholder="CPF, CNPJ, email, telefone ou chave aleatória" className="bg-secondary border-border" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Tipo da chave</Label>
+              <select value={meta.pixType || "EVP"} onChange={(e) => setMeta({ ...meta, pixType: e.target.value })} className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground">
+                <option value="CPF">CPF</option>
+                <option value="CNPJ">CNPJ</option>
+                <option value="PHONE">Telefone</option>
+                <option value="EMAIL">Email</option>
+                <option value="EVP">Chave aleatória (EVP)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Nome do recebedor (título do botão)</Label>
+              <Input value={meta.merchantName || ""} onChange={(e) => setMeta({ ...meta, merchantName: e.target.value })} placeholder="Pix" className="bg-secondary border-border" />
+            </div>
+            <p className="text-[10px] text-muted-foreground">💡 Será enviado um botão de copiar a chave PIX no WhatsApp.</p>
           </div>
         );
 
       default: // text
-        return (
-          <div className="space-y-3">
-            <Label className="text-sm text-muted-foreground">Rodapé (footer)</Label>
-            <Input value={meta.footer || ""} onChange={(e) => setMeta({ ...meta, footer: e.target.value })} placeholder="Texto do rodapé (opcional)" className="bg-secondary border-border" />
-          </div>
-        );
+        return null;
     }
   };
 
-  // ─── Phone Preview ──────────────────────────────────────
-
+  // ─── Phone Preview ──────────────────────────────
   const renderPhonePreview = (text: string, m: TemplateMetadata, tType: string) => (
     <div className="w-full max-w-[280px] mx-auto">
-      {/* Phone frame */}
       <div className="bg-[hsl(var(--secondary))] rounded-2xl p-3">
         {/* Header */}
         <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
@@ -371,6 +529,7 @@ const TemplatesPage = () => {
             <div className="bg-secondary rounded-lg h-32 flex items-center justify-center">
               {m.mediaType === "image" ? <Image className="w-8 h-8 text-muted-foreground" /> :
                m.mediaType === "video" ? <Video className="w-8 h-8 text-muted-foreground" /> :
+               m.mediaType === "audio" ? <span className="text-2xl">🎵</span> :
                <File className="w-8 h-8 text-muted-foreground" />}
             </div>
           )}
@@ -385,12 +544,34 @@ const TemplatesPage = () => {
               <span className="text-xs text-foreground">{m.contactName || "Contato"}</span>
             </div>
           )}
-
-          <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">{text}</p>
-
-          {m.footer && (
-            <p className="text-[10px] text-muted-foreground italic">{m.footer}</p>
+          {tType === "sticker" && (
+            <div className="bg-secondary rounded-lg h-32 w-32 mx-auto flex items-center justify-center">
+              <span className="text-4xl">🎨</span>
+            </div>
           )}
+          {tType === "gif" && (
+            <div className="bg-secondary rounded-lg h-24 flex items-center justify-center">
+              <span className="text-2xl">🎬 GIF</span>
+            </div>
+          )}
+          {tType === "link" && m.linkUrl && (
+            <div className="bg-secondary rounded-lg p-2 space-y-1">
+              {m.linkImage && <div className="bg-muted rounded h-16 flex items-center justify-center"><Image className="w-5 h-5 text-muted-foreground" /></div>}
+              <p className="text-xs font-semibold text-foreground">{m.linkTitle || "Link"}</p>
+              <p className="text-[10px] text-muted-foreground">{m.linkDescription || m.linkUrl}</p>
+            </div>
+          )}
+          {tType === "pix" && (
+            <div className="bg-secondary rounded-lg p-2 text-center space-y-1">
+              <span className="text-2xl">💰</span>
+              <p className="text-xs text-foreground font-medium">{m.merchantName || "Pix"}</p>
+              <p className="text-[10px] text-muted-foreground">{m.pixKey || "chave-pix"}</p>
+            </div>
+          )}
+
+          {text && <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">{text}</p>}
+
+          {m.footer && <p className="text-[10px] text-muted-foreground italic">{m.footer}</p>}
 
           <p className="text-[9px] text-muted-foreground text-right">
             {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
@@ -404,6 +585,7 @@ const TemplatesPage = () => {
               <div key={i} className="bg-card rounded-lg py-2 text-center text-xs text-primary font-medium shadow-sm flex items-center justify-center gap-1">
                 {btn.type === "url" && <span>🔗</span>}
                 {btn.type === "call" && <span>📞</span>}
+                {btn.type === "copy" && <span>📋</span>}
                 {btn.text || `Botão ${i + 1}`}
               </div>
             ))}
@@ -418,12 +600,35 @@ const TemplatesPage = () => {
             </div>
           </div>
         )}
+
+        {/* Poll preview */}
+        {tType === "poll" && (m.pollOptions || []).length > 0 && (
+          <div className="space-y-1 mt-2">
+            {(m.pollOptions || []).map((opt, i) => (
+              <div key={i} className="bg-secondary rounded-lg py-1.5 px-3 text-xs text-foreground flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full border border-muted-foreground shrink-0" />
+                {opt.name || `Opção ${i + 1}`}
+              </div>
+            ))}
+            <p className="text-[10px] text-muted-foreground text-center">
+              {(meta.pollMaxOptions || 0) === 1 ? "Escolha única" : "Múltipla escolha"}
+            </p>
+          </div>
+        )}
+
+        {/* PIX button */}
+        {tType === "pix" && (
+          <div className="mt-1">
+            <div className="bg-card rounded-lg py-2 text-center text-xs text-primary font-medium shadow-sm">
+              📋 Copiar chave Pix
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 
-  // ─── Create/Edit Form ──────────────────────────────────
-
+  // ─── Create/Edit Form ──────────────────────────
   if (showCreate) {
     return (
       <DashboardLayout>
@@ -453,52 +658,66 @@ const TemplatesPage = () => {
 
                 <div className="space-y-2">
                   <Label className="text-sm text-muted-foreground">Tipo de mensagem</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {TEMPLATE_TYPES.map((t) => (
-                      <button
-                        key={t.value}
-                        onClick={() => setType(t.value)}
-                        className={`py-2 px-3 rounded-lg text-xs font-medium border transition-colors ${
-                          type === t.value
-                            ? "border-primary bg-primary/10 text-primary"
-                            : "border-border text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {TEMPLATE_TYPES.map((t) => {
+                      const Icon = t.icon;
+                      return (
+                        <button
+                          key={t.value}
+                          onClick={() => setType(t.value)}
+                          className={`py-2 px-2 rounded-lg text-xs font-medium border transition-colors flex flex-col items-center gap-1 ${
+                            type === t.value
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          {t.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm text-muted-foreground">Conteúdo da mensagem</Label>
-                  </div>
+                  <Label className="text-sm text-muted-foreground">
+                    {type === "poll" ? "Pergunta da enquete" :
+                     type === "sticker" ? "Mensagem (não enviada com sticker)" :
+                     type === "media" && meta.mediaType === "audio" ? "Mensagem (não enviada com áudio)" :
+                     "Conteúdo da mensagem"}
+                  </Label>
                   <Textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder={type === "media" ? "Legenda da mídia..." : "Digite sua mensagem... Use {{nome}} para variáveis"}
-                    className="bg-secondary border-border min-h-[120px]"
+                    placeholder={
+                      type === "poll" ? "Qual a melhor opção?" :
+                      type === "link" ? "Confira nosso site! https://seusite.com" :
+                      type === "pix" ? "Mensagem opcional com o PIX" :
+                      "Digite sua mensagem... Use {{nome}} para variáveis"
+                    }
+                    className="bg-secondary border-border min-h-[100px]"
                   />
                 </div>
 
                 {/* Variable chips */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Variable className="w-3 h-3" /> Variáveis dinâmicas (clique para inserir)
-                  </Label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {VARIABLES.map((v) => (
-                      <button
-                        key={v.tag}
-                        onClick={() => insertVariable(v.tag)}
-                        className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-mono hover:bg-primary/20 transition-colors"
-                      >
-                        {v.tag}
-                      </button>
-                    ))}
+                {!["sticker"].includes(type) && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Variable className="w-3 h-3" /> Variáveis dinâmicas
+                    </Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {VARIABLES.map((v) => (
+                        <button
+                          key={v.tag}
+                          onClick={() => insertVariable(v.tag)}
+                          className="px-2.5 py-1 rounded-md bg-primary/10 text-primary text-xs font-mono hover:bg-primary/20 transition-colors"
+                        >
+                          {v.tag}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Type-specific fields */}
                 {renderTypeFields()}
@@ -570,8 +789,7 @@ const TemplatesPage = () => {
     );
   }
 
-  // ─── List View ──────────────────────────────────────────
-
+  // ─── List View ────────────────────────────────
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -591,21 +809,21 @@ const TemplatesPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Folders */}
             <div>
-              <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-3">PASTAS</p>
+              <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-3">TIPOS</p>
               <div className="space-y-1">
                 <button className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm bg-primary/10 text-primary border-l-2 border-primary">
                   <span className="flex items-center gap-2"><FolderOpen className="w-4 h-4" />Todos</span>
                   <span className="text-xs">{templates.length}</span>
                 </button>
               </div>
-              {/* Type breakdown */}
               <div className="mt-4 space-y-1">
                 {TEMPLATE_TYPES.map((tt) => {
                   const count = templates.filter((t) => t.type === tt.value).length;
                   if (count === 0) return null;
+                  const Icon = tt.icon;
                   return (
                     <div key={tt.value} className="flex items-center justify-between px-3 py-1.5 text-xs text-muted-foreground">
-                      <span>{tt.label}</span>
+                      <span className="flex items-center gap-2"><Icon className="w-3 h-3" />{tt.label}</span>
                       <span>{count}</span>
                     </div>
                   );

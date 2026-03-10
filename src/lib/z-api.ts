@@ -193,25 +193,48 @@ export async function sendLocation(inst: ZApiInstance, phone: string, lat: numbe
   return apiPost(inst, "send-location", { phone, latitude: lat, longitude: lng, name: name || "", address: address || "" });
 }
 
+export async function sendSticker(inst: ZApiInstance, phone: string, sticker: string, stickerAuthor?: string): Promise<any> {
+  return apiPost(inst, "send-sticker", { phone, sticker, stickerAuthor: stickerAuthor || "" });
+}
+
+export async function sendGif(inst: ZApiInstance, phone: string, gif: string, caption?: string): Promise<any> {
+  return apiPost(inst, "send-gif", { phone, gif, caption: caption || "" });
+}
+
+export async function sendPoll(inst: ZApiInstance, phone: string, message: string, poll: { name: string }[], pollMaxOptions?: number): Promise<any> {
+  const body: any = { phone, message, poll };
+  if (pollMaxOptions) body.pollMaxOptions = pollMaxOptions;
+  return apiPost(inst, "send-poll", body);
+}
+
+export async function sendPix(inst: ZApiInstance, phone: string, pixKey: string, pixType: string, merchantName?: string, message?: string): Promise<any> {
+  return apiPost(inst, "send-button-pix", { phone, pixKey, type: pixType, merchantName: merchantName || "Pix", message: message || "" });
+}
+
 export async function sendButtonList(inst: ZApiInstance, phone: string, message: string, footer: string, buttons: { id: string; label: string }[]): Promise<any> {
   return apiPost(inst, "send-button-list", { phone, message, footer, buttonList: { buttons: buttons.map(b => ({ id: b.id, label: b.label })) } });
 }
 
-export async function sendButtonActions(inst: ZApiInstance, phone: string, message: string, footer: string, buttons: { id: string; label: string; type: string; url?: string; phoneNumber?: string }[]): Promise<any> {
+export async function sendButtonActions(inst: ZApiInstance, phone: string, message: string, footer: string, buttons: { id: string; label: string; type: string; url?: string; phoneNumber?: string }[], title?: string): Promise<any> {
   const buttonActions = buttons.map(b => {
     if (b.type === "url") return { id: b.id, type: "URL", url: b.url, label: b.label };
     if (b.type === "call") return { id: b.id, type: "CALL", phoneNumber: b.phoneNumber, label: b.label };
+    if (b.type === "copy") return { id: b.id, type: "URL", url: `https://www.whatsapp.com/otp/copy/${b.url}`, label: b.label };
     return { id: b.id, type: "REPLY", label: b.label };
   });
-  return apiPost(inst, "send-button-actions", { phone, message, footer, buttonActions });
+  const body: any = { phone, message, footer, buttonActions };
+  if (title) body.title = title;
+  return apiPost(inst, "send-button-actions", body);
 }
 
 export async function sendOptionList(inst: ZApiInstance, phone: string, title: string, message: string, footer: string, sections: { title: string; rows: { title: string; description?: string; rowId: string }[] }[]): Promise<any> {
   return apiPost(inst, "send-option-list", { phone, optionList: { title, message, footer, optionSections: sections } });
 }
 
-export async function sendLink(inst: ZApiInstance, phone: string, message: string, linkUrl: string, title?: string, description?: string): Promise<any> {
-  return apiPost(inst, "send-link", { phone, message, linkUrl, title: title || "", linkDescription: description || "" });
+export async function sendLink(inst: ZApiInstance, phone: string, message: string, linkUrl: string, title?: string, description?: string, image?: string): Promise<any> {
+  const body: any = { phone, message, linkUrl, title: title || "", linkDescription: description || "" };
+  if (image) body.image = image;
+  return apiPost(inst, "send-link", body);
 }
 
 // ---------- Mobile Registration Flow ----------
