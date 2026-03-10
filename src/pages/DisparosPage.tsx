@@ -309,10 +309,17 @@ const DisparosPage = () => {
               </select>
             </div>
           </div>
-          <div className="flex items-end gap-4">
+          <div className="flex items-end gap-4 flex-wrap">
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Intervalo (seg)</Label>
               <Input type="number" value={delay} onChange={(e) => setDelay(e.target.value)} min="1" max="30" className="h-10 bg-secondary border-border w-28" />
+            </div>
+            <div className="flex items-center gap-2 pb-1">
+              <Switch checked={autoStart} onCheckedChange={setAutoStart} id="auto-start" />
+              <Label htmlFor="auto-start" className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer">
+                <Zap className="w-3.5 h-3.5" />
+                Auto-iniciar ao conectar
+              </Label>
             </div>
             {running ? (
               <Button variant="destructive" onClick={stopDisparo} className="h-10">
