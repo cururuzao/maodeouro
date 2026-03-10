@@ -86,6 +86,7 @@ const InstancesPage = () => {
       toast({ title: `Instância "${newName}" criada!`, description: `Tipo: ${newIntegration === "WHATSAPP-BUSINESS" ? "Cloud API (Oficial)" : "Baileys"}` });
       setNewName("");
       setBusinessToken("");
+      setBusinessNumber("");
       setNewIntegration("WHATSAPP-BAILEYS");
       setShowCreate(false);
       loadInstances();
