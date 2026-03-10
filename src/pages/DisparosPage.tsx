@@ -61,7 +61,7 @@ const DisparosPage = () => {
   const [selectedList, setSelectedList] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [delay, setDelay] = useState("3");
-
+  const [autoStart, setAutoStart] = useState(false);
   // Execution state
   const [running, setRunning] = useState(false);
   const [currentDisparo, setCurrentDisparo] = useState<string | null>(null);
