@@ -12,6 +12,7 @@ import {
   sendLocation,
   sendLink,
   sendButtonList,
+  sendButtonActions,
   sendOptionList,
   type ZApiInstance,
 } from "@/lib/z-api";
@@ -75,24 +76,25 @@ export async function sendTemplateMessage(
         return sendText(inst, phone, text);
       }
 
-      // URL/call buttons: send as text with links appended
       const hasUrlOrCall = allButtons.some((b) => b.type === "url" || b.type === "call");
       if (hasUrlOrCall) {
-        let fallbackText = text;
-        for (const btn of allButtons) {
-          if (btn.type === "url" && btn.url) {
-            fallbackText += `\n\n🔗 ${btn.text}: ${btn.url}`;
-          } else if (btn.type === "call" && btn.phoneNumber) {
-            fallbackText += `\n\n📞 ${btn.text}: ${btn.phoneNumber}`;
-          }
-        }
-        if (metadata.footer) {
-          fallbackText += `\n\n_${metadata.footer}_`;
-        }
-        return sendText(inst, phone, fallbackText);
+        // Use send-button-actions for URL/call buttons
+        return sendButtonActions(
+          inst,
+          phone,
+          text,
+          metadata.footer || "",
+          allButtons.map((b) => ({
+            id: b.id,
+            label: b.text,
+            type: b.type,
+            url: b.url,
+            phoneNumber: b.phoneNumber,
+          }))
+        );
       }
 
-      // Reply buttons
+      // Reply-only buttons
       return sendButtonList(
         inst,
         phone,
