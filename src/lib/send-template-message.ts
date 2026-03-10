@@ -76,21 +76,31 @@ export async function sendTemplateMessage(
         return sendText(inst, phone, text);
       }
 
-      // Build message with buttons as text (most compatible, works on trial)
-      let fullText = text;
-      for (const btn of allButtons) {
-        if (btn.type === "url" && btn.url) {
-          fullText += `\n\n🔗 ${btn.text}: ${btn.url}`;
-        } else if (btn.type === "call" && btn.phoneNumber) {
-          fullText += `\n\n📞 ${btn.text}: ${btn.phoneNumber}`;
-        } else {
-          fullText += `\n\n▪️ ${btn.text}`;
-        }
+      const hasUrlOrCall = allButtons.some((b) => b.type === "url" || b.type === "call");
+      if (hasUrlOrCall) {
+        return sendButtonActions(
+          inst,
+          phone,
+          text,
+          metadata.footer || "",
+          allButtons.map((b) => ({
+            id: b.id,
+            label: b.text,
+            type: b.type,
+            url: b.url,
+            phoneNumber: b.phoneNumber,
+          }))
+        );
       }
-      if (metadata.footer) {
-        fullText += `\n\n_${metadata.footer}_`;
-      }
-      return sendText(inst, phone, fullText);
+
+      // Reply-only buttons
+      return sendButtonList(
+        inst,
+        phone,
+        text,
+        metadata.footer || "",
+        allButtons.map((b) => ({ id: b.id, label: b.text }))
+      );
     }
 
     case "media": {
