@@ -117,9 +117,90 @@ export async function sendTextMessage(
 ): Promise<any> {
   return apiCall(`/message/sendText/${instanceName}`, {
     method: "POST",
+    body: JSON.stringify({ number, text }),
+  });
+}
+
+export async function sendButtons(
+  instanceName: string,
+  number: string,
+  title: string,
+  description: string,
+  footer: string,
+  buttons: { buttonId: string; buttonText: { displayText: string } }[]
+): Promise<any> {
+  return apiCall(`/message/sendButtons/${instanceName}`, {
+    method: "POST",
     body: JSON.stringify({
       number,
-      text,
+      buttonMessage: { title, description, footerText: footer, buttons },
+    }),
+  });
+}
+
+export async function sendList(
+  instanceName: string,
+  number: string,
+  title: string,
+  description: string,
+  footer: string,
+  buttonText: string,
+  sections: { title: string; rows: { title: string; description?: string; rowId: string }[] }[]
+): Promise<any> {
+  return apiCall(`/message/sendList/${instanceName}`, {
+    method: "POST",
+    body: JSON.stringify({
+      number,
+      listMessage: { title, description, footerText: footer, buttonText, sections },
+    }),
+  });
+}
+
+export async function sendMedia(
+  instanceName: string,
+  number: string,
+  mediatype: "image" | "video" | "document" | "audio",
+  media: string,
+  caption: string,
+  fileName?: string
+): Promise<any> {
+  return apiCall(`/message/sendMedia/${instanceName}`, {
+    method: "POST",
+    body: JSON.stringify({
+      number,
+      mediaMessage: { mediatype, media, caption, fileName },
+    }),
+  });
+}
+
+export async function sendContact(
+  instanceName: string,
+  number: string,
+  contactName: string,
+  contactNumber: string
+): Promise<any> {
+  return apiCall(`/message/sendContact/${instanceName}`, {
+    method: "POST",
+    body: JSON.stringify({
+      number,
+      contactMessage: [{ fullName: contactName, wuid: contactNumber, phoneNumber: contactNumber }],
+    }),
+  });
+}
+
+export async function sendLocation(
+  instanceName: string,
+  number: string,
+  lat: number,
+  lng: number,
+  name?: string,
+  address?: string
+): Promise<any> {
+  return apiCall(`/message/sendLocation/${instanceName}`, {
+    method: "POST",
+    body: JSON.stringify({
+      number,
+      locationMessage: { latitude: lat, longitude: lng, name, address },
     }),
   });
 }
