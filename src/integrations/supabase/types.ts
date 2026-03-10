@@ -194,6 +194,44 @@ export type Database = {
         }
         Relationships: []
       }
+      public_leads: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          instance_id: string | null
+          name: string
+          phone: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          instance_id?: string | null
+          name: string
+          phone: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          instance_id?: string | null
+          name?: string
+          phone?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_leads_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "z_api_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           content: string

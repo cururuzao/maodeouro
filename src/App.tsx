@@ -19,6 +19,7 @@ import SettingsPage from "./pages/SettingsPage";
 import ConectarPage from "./pages/ConectarPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import AdminPage from "./pages/AdminPage";
+import PublicConnectPage from "./pages/PublicConnectPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/connect" element={<PublicConnectPage />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/instances" element={<ProtectedRoute><InstancesPage /></ProtectedRoute>} />
