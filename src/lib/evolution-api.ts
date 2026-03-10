@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface EvolutionConfig {
   baseUrl: string;
   apiKey: string;
+  cloudApiToken?: string;
 }
 
 export interface Instance {
