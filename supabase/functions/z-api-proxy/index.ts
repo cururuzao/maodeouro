@@ -49,6 +49,8 @@ Deno.serve(async (req) => {
     }
 
     const url = `${Z_API_BASE}/instances/${instance_id}/token/${instance_token}/${endpoint}`;
+    console.log(`[z-api-proxy] ${method || "GET"} ${endpoint} -> ${url}`);
+
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (client_token) headers["Client-Token"] = client_token;
 
@@ -75,11 +77,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    console.log(`[z-api-proxy] Response status: ${apiRes.status}`, JSON.stringify(responseData).substring(0, 500));
+
     return new Response(JSON.stringify(responseData), {
       status: apiRes.status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error(`[z-api-proxy] Error:`, err.message);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
