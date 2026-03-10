@@ -109,14 +109,14 @@ const TemplatesPage = () => {
     if (!name.trim() || !content.trim()) return;
     setSaving(true);
 
-    const payload = { name, type, content, metadata: meta, user_id: user?.id };
+    const payload = { name, type, content, metadata: meta as any, user_id: user?.id };
 
     if (editingTemplate) {
       const { error } = await supabase.from("templates").update(payload).eq("id", editingTemplate.id);
       if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
       else toast({ title: "Template atualizado!" });
     } else {
-      const { error } = await supabase.from("templates").insert(payload);
+      const { error } = await supabase.from("templates").insert([payload]);
       if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
       else toast({ title: "Template criado!" });
     }
