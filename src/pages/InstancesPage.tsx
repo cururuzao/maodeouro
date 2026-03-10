@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  Plus, RefreshCw, Trash2, QrCode, Wifi, WifiOff, Loader2, X, Link2, User, Phone, Monitor,
+  Plus, RefreshCw, Trash2, WifiOff, Loader2, X, Link2, User, Phone, Monitor,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,17 +8,33 @@ import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   fetchInstances, createInstance, deleteInstance, connectInstance,
-  getConnectionState, logoutInstance, type Instance, type QRCodeResponse,
+  logoutInstance,
 } from "@/lib/evolution-api";
 
+interface NormalizedInstance {
+  name: string;
+  owner: string;
+  connectionStatus: string;
+}
+
+function normalizeInstances(data: any[]): NormalizedInstance[] {
+  return data
+    .map((item: any) => {
+      const name = item?.instance?.instanceName || item?.name;
+      if (!name) return null;
+      const status = item?.instance?.status || item?.connectionStatus || "close";
+      const owner = item?.instance?.owner || item?.ownerJid || "";
+      return { name, owner, connectionStatus: status };
+    })
+    .filter(Boolean) as NormalizedInstance[];
+}
+
 const InstancesPage = () => {
-  const [instances, setInstances] = useState<Instance[]>([]);
+  const [instances, setInstances] = useState<NormalizedInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [qrData, setQrData] = useState<{ name: string; data: QRCodeResponse } | null>(null);
-  const [states, setStates] = useState<Record<string, string>>({});
   const [phoneNumber, setPhoneNumber] = useState("");
   const [connectingInstance, setConnectingInstance] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -27,18 +43,8 @@ const InstancesPage = () => {
     setLoading(true);
     try {
       const data = await fetchInstances();
-      const list = (Array.isArray(data) ? data : []).filter((item: any) => item?.instance?.instanceName);
+      const list = normalizeInstances(Array.isArray(data) ? data : []);
       setInstances(list);
-      const stateMap: Record<string, string> = {};
-      for (const inst of list) {
-        try {
-          const cs = await getConnectionState(inst.instance.instanceName);
-          stateMap[inst.instance.instanceName] = cs.instance.state;
-        } catch {
-          stateMap[inst.instance.instanceName] = "unknown";
-        }
-      }
-      setStates(stateMap);
     } catch (err: any) {
       toast({ title: "Erro ao carregar instâncias", description: err.message, variant: "destructive" });
     }
@@ -51,13 +57,10 @@ const InstancesPage = () => {
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      const result = await createInstance(newName.trim());
+      await createInstance(newName.trim());
       toast({ title: `Instância "${newName}" criada!` });
       setNewName("");
       setShowCreate(false);
-      if (result?.qrcode?.base64) {
-        setQrData({ name: newName.trim(), data: result.qrcode });
-      }
       loadInstances();
     } catch (err: any) {
       toast({ title: "Erro ao criar", description: err.message, variant: "destructive" });
@@ -106,8 +109,8 @@ const InstancesPage = () => {
     }
   };
 
-  const connected = instances.filter((i) => i?.instance?.instanceName && states[i.instance.instanceName] === "open");
-  const disconnected = instances.filter((i) => i?.instance?.instanceName && states[i.instance.instanceName] !== "open");
+  const connected = instances.filter((i) => i.connectionStatus === "open");
+  const disconnected = instances.filter((i) => i.connectionStatus !== "open");
 
   return (
     <DashboardLayout>
@@ -189,83 +192,74 @@ const InstancesPage = () => {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Connected */}
           {connected.length > 0 && (
             <div>
               <h2 className="text-base font-semibold text-primary mb-3 flex items-center gap-2">
                 <span className="text-primary">▲</span> Conectadas ({connected.length})
               </h2>
               <div className="space-y-3">
-                {connected.map((inst) => {
-                  const name = inst.instance.instanceName;
-                  return (
-                    <div key={name} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                          <User className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground text-sm">{name}</span>
-                            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Conectado</span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                            <span className="flex items-center gap-1"><User className="w-3 h-3" />{inst.instance.owner || "—"}</span>
-                            <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{inst.instance.owner || "—"}</span>
-                          </div>
-                        </div>
+                {connected.map((inst) => (
+                  <div key={inst.name} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                        <User className="w-5 h-5 text-muted-foreground" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" className="bg-primary text-primary-foreground text-xs" disabled>
-                          ⚡ Disparando
-                        </Button>
-                        <Button size="sm" variant="outline" className="text-xs" onClick={() => handleLogout(name)}>
-                          <WifiOff className="w-3.5 h-3.5 mr-1.5" />Desconectar
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => handleDelete(name)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground text-sm">{inst.name}</span>
+                          <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Conectado</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                          <span className="flex items-center gap-1"><User className="w-3 h-3" />{inst.owner || "—"}</span>
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" className="bg-primary text-primary-foreground text-xs" disabled>
+                        ⚡ Disparando
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => handleLogout(inst.name)}>
+                        <WifiOff className="w-3.5 h-3.5 mr-1.5" />Desconectar
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => handleDelete(inst.name)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Disconnected */}
           {disconnected.length > 0 && (
             <div>
               <h2 className="text-base font-semibold text-destructive mb-3 flex items-center gap-2">
                 <span className="text-destructive">▼</span> Desconectadas ({disconnected.length})
               </h2>
               <div className="space-y-3">
-                {disconnected.map((inst) => {
-                  const name = inst.instance.instanceName;
-                  return (
-                    <div key={name} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                          <User className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-foreground text-sm">{name}</span>
-                            <span className="text-xs bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">Desconectado</span>
-                          </div>
-                        </div>
+                {disconnected.map((inst) => (
+                  <div key={inst.name} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                        <User className="w-5 h-5 text-muted-foreground" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" className="text-xs" onClick={() => handleConnect(name)}>
-                          <Link2 className="w-3.5 h-3.5 mr-1.5" />Conectar
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => handleDelete(name)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-foreground text-sm">{inst.name}</span>
+                          <span className="text-xs bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">Desconectado</span>
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => handleConnect(inst.name)}>
+                        <Link2 className="w-3.5 h-3.5 mr-1.5" />Conectar
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => handleDelete(inst.name)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
