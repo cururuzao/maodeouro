@@ -7,7 +7,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const Z_API_BASE = "https://api.z-api.io";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 export interface ZApiInstance {
   id: string;
