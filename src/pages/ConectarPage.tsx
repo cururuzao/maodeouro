@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Smartphone, Phone, Loader2, RefreshCw, CheckCircle2, Wifi, WifiOff, KeyRound } from "lucide-react";
+import { Smartphone, Phone, Loader2, RefreshCw, CheckCircle2, Wifi, WifiOff, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,8 +15,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import {
   listInstances,
   getStatus,
-  requestRegistrationCode,
-  confirmRegistrationCode,
+  getPhoneCode,
   type ZApiInstance,
   type ZApiStatus,
 } from "@/lib/z-api";
@@ -29,16 +28,10 @@ const ConectarPage = () => {
   const [instances, setInstances] = useState<InstanceWithStatus[]>([]);
   const [loadingInstances, setLoadingInstances] = useState(true);
   const [selectedId, setSelectedId] = useState("");
-
-  // Step 2: phone
   const [phone, setPhone] = useState("");
-  const [sendingCode, setSendingCode] = useState(false);
-  const [codeSent, setCodeSent] = useState(false);
-  const [sendMethod, setSendMethod] = useState("sms");
-
-  // Step 3: confirm code
-  const [code, setCode] = useState("");
-  const [confirming, setConfirming] = useState(false);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
 
   const loadInstances = useCallback(async () => {
@@ -56,8 +49,6 @@ const ConectarPage = () => {
         })
       );
       setInstances(withStatus);
-
-      // Rodízio: auto-seleciona a primeira instância DESCONECTADA
       const firstDisconnected = withStatus.find((i) => !i.connStatus?.connected);
       if (firstDisconnected) {
         setSelectedId(firstDisconnected.id);
@@ -70,81 +61,79 @@ const ConectarPage = () => {
     setLoadingInstances(false);
   }, []);
 
-  useEffect(() => {
-    loadInstances();
-  }, [loadInstances]);
+  useEffect(() => { loadInstances(); }, [loadInstances]);
 
   const selectedInst = instances.find((i) => i.id === selectedId);
   const connectedCount = instances.filter((i) => i.connStatus?.connected).length;
   const disconnectedCount = instances.filter((i) => !i.connStatus?.connected).length;
 
-  // Step 2: Request code to be sent to phone
-  const handleRequestCode = async () => {
+  const handleGetCode = async () => {
     if (!selectedInst) {
       toast({ title: "Selecione uma instância", variant: "destructive" });
       return;
     }
 
     let cleanPhone = phone.replace(/\D/g, "");
-    if (cleanPhone.startsWith("55")) {
-      cleanPhone = cleanPhone.substring(2);
+    if (!cleanPhone.startsWith("55")) {
+      cleanPhone = "55" + cleanPhone;
     }
 
-    if (cleanPhone.length < 10) {
+    if (cleanPhone.length < 12) {
       toast({ title: "Número inválido", description: "Digite o número com DDD (ex: 63992570035)", variant: "destructive" });
       return;
     }
 
-    setSendingCode(true);
+    setGenerating(true);
+    setPairingCode(null);
+    setConnectionStatus(null);
+
     try {
       const status = await getStatus(selectedInst);
       if (status.connected) {
         toast({ title: "Instância já conectada!" });
         setConnectionStatus("connected");
-        setSendingCode(false);
+        setGenerating(false);
         return;
       }
 
-      const result = await requestRegistrationCode(selectedInst, "55", cleanPhone, sendMethod);
-      if (result?.error) {
-        toast({ title: "Erro ao solicitar código", description: result.error, variant: "destructive" });
+      const result = await getPhoneCode(selectedInst, cleanPhone);
+      if (result?.value) {
+        setPairingCode(result.value);
+        toast({ title: "Código gerado! 🔑", description: "Digite este código no seu WhatsApp para conectar." });
       } else {
-        setCodeSent(true);
-        toast({ title: "Código enviado! 📱", description: `Verifique seu celular (${sendMethod.toUpperCase()}). O código aparecerá no seu dispositivo.` });
+        const errorMsg = (result as any)?.error || "Tente novamente em alguns segundos.";
+        toast({ title: "Erro ao gerar código", description: errorMsg, variant: "destructive" });
       }
     } catch (err: any) {
-      toast({ title: "Erro ao solicitar código", description: err.message, variant: "destructive" });
+      toast({ title: "Erro ao gerar código", description: err.message, variant: "destructive" });
     }
-    setSendingCode(false);
+    setGenerating(false);
   };
 
-  // Step 3: Confirm code
-  const handleConfirmCode = async () => {
-    if (!selectedInst || !code.trim()) {
-      toast({ title: "Digite o código recebido", variant: "destructive" });
-      return;
-    }
-
-    setConfirming(true);
+  const handleCheckStatus = async () => {
+    if (!selectedInst) return;
+    setCheckingStatus(true);
     try {
-      const result = await confirmRegistrationCode(selectedInst, code.trim());
-      if (result?.error) {
-        toast({ title: "Erro ao confirmar", description: result.error, variant: "destructive" });
-      } else {
+      const status = await getStatus(selectedInst);
+      if (status.connected) {
         setConnectionStatus("connected");
-        toast({ title: "WhatsApp conectado com sucesso! ✅" });
+        toast({ title: "Conectado com sucesso! ✅" });
         loadInstances();
+      } else {
+        setConnectionStatus("disconnected");
+        toast({ title: "Ainda desconectado", description: "Digite o código no WhatsApp e tente novamente.", variant: "destructive" });
       }
     } catch (err: any) {
-      toast({ title: "Erro ao confirmar código", description: err.message, variant: "destructive" });
+      toast({ title: "Erro ao verificar", description: err.message, variant: "destructive" });
     }
-    setConfirming(false);
+    setCheckingStatus(false);
   };
 
-  const resetFlow = () => {
-    setCodeSent(false);
-    setCode("");
-    setConnectionStatus(null);
+  const copyCode = () => {
+    if (pairingCode) {
+      navigator.clipboard.writeText(pairingCode);
+      toast({ title: "Código copiado!" });
+    }
   };
 
   return (
@@ -156,7 +145,7 @@ const ConectarPage = () => {
           </div>
           <h1 className="text-2xl font-bold text-foreground">Conectar WhatsApp</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Conecte via número de telefone + código de confirmação
+            Gere o código de 8 dígitos e digite no WhatsApp
           </p>
         </div>
 
@@ -196,7 +185,7 @@ const ConectarPage = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              <Select value={selectedId} onValueChange={(v) => { setSelectedId(v); resetFlow(); }}>
+              <Select value={selectedId} onValueChange={(v) => { setSelectedId(v); setPairingCode(null); setConnectionStatus(null); }}>
                 <SelectTrigger className="h-11 bg-secondary border-border">
                   <SelectValue placeholder="Escolha uma instância" />
                 </SelectTrigger>
@@ -226,18 +215,18 @@ const ConectarPage = () => {
           )}
         </div>
 
-        {/* Step 2: Phone number + request code */}
+        {/* Step 2: Phone number */}
         <div className="bg-card border border-border rounded-xl p-5 mb-4">
           <div className="flex items-center gap-2 mb-4">
             <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">2</span>
-            <h2 className="text-sm font-semibold text-foreground">Solicitar código</h2>
+            <h2 className="text-sm font-semibold text-foreground">Número do WhatsApp</h2>
           </div>
 
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Número do WhatsApp (com DDD)</Label>
+              <Label className="text-xs text-muted-foreground">Número com DDD</Label>
               <div className="flex gap-2">
-                <div className="flex items-center bg-secondary border border-border rounded-lg px-3 text-sm text-muted-foreground">
+                <div className="flex items-center bg-secondary border border-border rounded-lg px-3 text-sm text-muted-foreground shrink-0">
                   +55
                 </div>
                 <Input
@@ -246,94 +235,67 @@ const ConectarPage = () => {
                   placeholder="63992570035"
                   className="h-11 bg-secondary border-border font-mono flex-1"
                   type="tel"
-                  disabled={codeSent}
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Método de envio</Label>
-              <Select value={sendMethod} onValueChange={setSendMethod} disabled={codeSent}>
-                <SelectTrigger className="h-10 bg-secondary border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sms">📱 SMS</SelectItem>
-                  <SelectItem value="voice">📞 Ligação de voz</SelectItem>
-                  <SelectItem value="wa_old">💬 Pop-up no WhatsApp</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {!codeSent ? (
-              <Button
-                onClick={handleRequestCode}
-                disabled={sendingCode || !selectedId || !phone.trim()}
-                className="w-full h-11"
-              >
-                {sendingCode ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Phone className="w-4 h-4 mr-2" />
-                    Enviar Código para o Celular
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={resetFlow} className="w-full">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Reenviar código
-              </Button>
-            )}
+            <Button
+              onClick={handleGetCode}
+              disabled={generating || !selectedId || !phone.trim()}
+              className="w-full h-11"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Gerando código...
+                </>
+              ) : (
+                <>
+                  <Phone className="w-4 h-4 mr-2" />
+                  Gerar Código de Pareamento
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
-        {/* Step 3: Enter code received on phone */}
-        {codeSent && connectionStatus !== "connected" && (
+        {/* Step 3: Show pairing code */}
+        {pairingCode && connectionStatus !== "connected" && (
           <div className="bg-card border border-primary/30 rounded-xl p-5 mb-4">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">3</span>
-              <h2 className="text-sm font-semibold text-foreground">Digite o código recebido</h2>
+              <h2 className="text-sm font-semibold text-foreground">Digite este código no WhatsApp</h2>
+            </div>
+
+            <div className="bg-secondary rounded-lg p-5 flex items-center justify-center mb-4">
+              <button onClick={copyCode} className="flex items-center gap-3 group cursor-pointer">
+                <span className="text-3xl font-mono font-bold text-foreground tracking-[0.3em]">
+                  {pairingCode}
+                </span>
+                <Copy className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </button>
             </div>
 
             <div className="space-y-2 mb-4">
               <p className="text-xs text-muted-foreground">
-                📱 Um código foi enviado para seu celular via <strong>{sendMethod === "sms" ? "SMS" : sendMethod === "voice" ? "ligação" : "WhatsApp"}</strong>.
-                Digite-o abaixo para conectar.
+                📱 No seu celular, abra o <strong>WhatsApp</strong>:
               </p>
+              <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-1 ml-1">
+                <li>Vá em <strong>Configurações</strong> → <strong>Aparelhos conectados</strong></li>
+                <li>Toque em <strong>Conectar um aparelho</strong></li>
+                <li>Toque em <strong>"Conectar com número de telefone"</strong></li>
+                <li>Digite o código <strong className="text-foreground">{pairingCode}</strong></li>
+              </ol>
             </div>
 
-            <div className="space-y-3">
-              <Input
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Digite o código (ex: 123456)"
-                className="h-12 bg-secondary border-border font-mono text-center text-lg tracking-[0.3em]"
-                maxLength={10}
-              />
-
-              <Button
-                onClick={handleConfirmCode}
-                disabled={confirming || !code.trim()}
-                className="w-full h-11"
-              >
-                {confirming ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Confirmando...
-                  </>
-                ) : (
-                  <>
-                    <KeyRound className="w-4 h-4 mr-2" />
-                    Confirmar e Conectar
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button className="w-full" onClick={handleCheckStatus} disabled={checkingStatus}>
+              {checkingStatus ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Verificar conexão
+            </Button>
           </div>
         )}
 
@@ -345,7 +307,7 @@ const ConectarPage = () => {
             <p className="text-sm text-muted-foreground mt-1">
               A instância está pronta para enviar mensagens.
             </p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={() => { resetFlow(); loadInstances(); }}>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => { setPairingCode(null); setConnectionStatus(null); setPhone(""); loadInstances(); }}>
               Conectar outra instância
             </Button>
           </div>
