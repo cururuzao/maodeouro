@@ -107,7 +107,7 @@ const ConectarPage = () => {
         setPairingCode(result.value);
         toast({ title: "Código gerado!", description: "Use o código no seu WhatsApp para parear." });
       } else {
-        const errorMsg = result?.error || "Tente novamente em alguns segundos.";
+        const errorMsg = (result as any)?.error || "Tente novamente em alguns segundos.";
         toast({ title: "Código não disponível", description: errorMsg, variant: "destructive" });
       }
     } catch (err: any) {
