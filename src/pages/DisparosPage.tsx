@@ -7,7 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchInstances, sendTextMessage, type Instance } from "@/lib/evolution-api";
+import { fetchInstances, type Instance } from "@/lib/evolution-api";
+import { sendTemplateMessage, replaceVariables } from "@/lib/send-template-message";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface LeadList {
@@ -18,7 +19,9 @@ interface LeadList {
 interface Template {
   id: string;
   name: string;
+  type: string;
   content: string;
+  metadata: Record<string, any> | null;
 }
 
 interface Disparo {
@@ -63,7 +66,7 @@ const DisparosPage = () => {
     const [instancesRes, listsRes, templatesRes, disparosRes] = await Promise.all([
       fetchInstances().catch(() => []),
       supabase.from("lead_lists").select("id, name").order("created_at", { ascending: false }),
-      supabase.from("templates").select("id, name, content").order("created_at", { ascending: false }),
+      supabase.from("templates").select("id, name, type, content, metadata").order("created_at", { ascending: false }),
       supabase.from("disparos").select("*").order("started_at", { ascending: false }).limit(50),
     ]);
 
@@ -75,7 +78,7 @@ const DisparosPage = () => {
     if (instList.length > 0) setSelectedInstance(instList[0].name);
 
     setLists(listsRes.data || []);
-    setTemplates(templatesRes.data || []);
+    setTemplates((templatesRes.data || []).map((t: any) => ({ ...t, metadata: t.metadata || {} })));
     setDisparos((disparosRes.data as Disparo[]) || []);
     setLoading(false);
   };
@@ -133,18 +136,10 @@ const DisparosPage = () => {
     for (const lead of leads) {
       if (abortRef.current) break;
 
-      // Replace all dynamic variables
-      const extra = (lead as any).extra_data || {};
-      let text = template.content
-        .replace(/\{\{nome\}\}/gi, lead.name || "")
-        .replace(/\{\{telefone\}\}/gi, lead.phone || "")
-        .replace(/\{\{email\}\}/gi, extra.email || "")
-        .replace(/\{\{empresa\}\}/gi, extra.empresa || "")
-        .replace(/\{\{data\}\}/gi, new Date().toLocaleDateString("pt-BR"))
-        .replace(/\{\{hora\}\}/gi, new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+      const text = replaceVariables(template.content, lead as any);
 
       try {
-        await sendTextMessage(selectedInstance, lead.phone, text);
+        await sendTemplateMessage(selectedInstance, lead.phone, text, template.type, template.metadata || {});
         sent++;
       } catch {
         failed++;
