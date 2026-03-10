@@ -109,6 +109,10 @@ async function apiPost(inst: ZApiInstance, endpoint: string, body: any): Promise
   return proxyCall(inst, endpoint, "POST", body);
 }
 
+async function apiPut(inst: ZApiInstance, endpoint: string, body: any): Promise<any> {
+  return proxyCall(inst, endpoint, "PUT", body);
+}
+
 // ---------- Instance status / connection ----------
 
 export async function getStatus(inst: ZApiInstance): Promise<ZApiStatus> {
@@ -131,14 +135,32 @@ export async function getPhoneCode(inst: ZApiInstance, phone: string): Promise<{
   return apiGet(inst, `phone-code/${phone}`);
 }
 
-// ---------- Mobile Registration Flow ----------
+// ---------- Profile Management ----------
 
-export async function requestRegistrationCode(inst: ZApiInstance, ddi: string, phone: string, method: string = "sms"): Promise<any> {
-  return apiPost(inst, "mobile/request-registration-code", { ddi, phone, method });
+export async function updateProfileName(inst: ZApiInstance, name: string): Promise<any> {
+  return apiPut(inst, "profile-name", { value: name });
 }
 
-export async function confirmRegistrationCode(inst: ZApiInstance, code: string): Promise<any> {
-  return apiPost(inst, "mobile/confirm-registration-code", { code });
+export async function updateProfilePicture(inst: ZApiInstance, imageUrl: string): Promise<any> {
+  return apiPut(inst, "profile-picture", { value: imageUrl });
+}
+
+export async function updateProfileDescription(inst: ZApiInstance, description: string): Promise<any> {
+  return apiPut(inst, "profile-description", { value: description });
+}
+
+// ---------- Chat Management ----------
+
+export async function muteChat(inst: ZApiInstance, phone: string): Promise<any> {
+  return apiPost(inst, "modify-chat", { phone, action: "mute" });
+}
+
+export async function archiveChat(inst: ZApiInstance, phone: string): Promise<any> {
+  return apiPost(inst, "modify-chat", { phone, action: "archive" });
+}
+
+export async function deleteChat(inst: ZApiInstance, phone: string): Promise<any> {
+  return apiPost(inst, "modify-chat", { phone, action: "delete" });
 }
 
 // ---------- Messages ----------
@@ -164,40 +186,27 @@ export async function sendAudio(inst: ZApiInstance, phone: string, audio: string
 }
 
 export async function sendContact(inst: ZApiInstance, phone: string, contactName: string, contactPhone: string): Promise<any> {
-  return apiPost(inst, "send-contact", {
-    phone,
-    contactName,
-    contactPhone,
-  });
+  return apiPost(inst, "send-contact", { phone, contactName, contactPhone });
 }
 
 export async function sendLocation(inst: ZApiInstance, phone: string, lat: number, lng: number, name?: string, address?: string): Promise<any> {
-  return apiPost(inst, "send-location", {
-    phone,
-    latitude: lat,
-    longitude: lng,
-    name: name || "",
-    address: address || "",
-  });
+  return apiPost(inst, "send-location", { phone, latitude: lat, longitude: lng, name: name || "", address: address || "" });
 }
 
 export async function sendButtonList(inst: ZApiInstance, phone: string, message: string, footer: string, buttons: { id: string; label: string }[]): Promise<any> {
-  return apiPost(inst, "send-button-list", {
-    phone,
-    message,
-    footer,
-    buttonList: {
-      buttons: buttons.map(b => ({ id: b.id, label: b.label })),
-    },
-  });
+  return apiPost(inst, "send-button-list", { phone, message, footer, buttonList: { buttons: buttons.map(b => ({ id: b.id, label: b.label })) } });
 }
 
 export async function sendLink(inst: ZApiInstance, phone: string, message: string, linkUrl: string, title?: string, description?: string): Promise<any> {
-  return apiPost(inst, "send-link", {
-    phone,
-    message,
-    linkUrl,
-    title: title || "",
-    linkDescription: description || "",
-  });
+  return apiPost(inst, "send-link", { phone, message, linkUrl, title: title || "", linkDescription: description || "" });
+}
+
+// ---------- Mobile Registration Flow ----------
+
+export async function requestRegistrationCode(inst: ZApiInstance, ddi: string, phone: string, method: string = "sms"): Promise<any> {
+  return apiPost(inst, "mobile/request-registration-code", { ddi, phone, method });
+}
+
+export async function confirmRegistrationCode(inst: ZApiInstance, code: string): Promise<any> {
+  return apiPost(inst, "mobile/confirm-registration-code", { code });
 }

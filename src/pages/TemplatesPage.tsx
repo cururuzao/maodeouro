@@ -49,6 +49,10 @@ interface TemplateMetadata {
   longitude?: string;
   locationName?: string;
   locationAddress?: string;
+  // Profile customization (applied when disparo starts)
+  profileName?: string;
+  profilePictureUrl?: string;
+  profileDescription?: string;
 }
 
 interface Template {
@@ -498,6 +502,23 @@ const TemplatesPage = () => {
 
                 {/* Type-specific fields */}
                 {renderTypeFields()}
+
+                {/* Profile customization */}
+                <div className="space-y-3 pt-3 border-t border-border">
+                  <Label className="text-sm font-medium text-foreground">Personalização do Perfil (ao disparar)</Label>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Nome do perfil</Label>
+                    <Input value={meta.profileName || ""} onChange={(e) => setMeta({ ...meta, profileName: e.target.value })} placeholder="Nome que aparecerá no WhatsApp" className="bg-secondary border-border" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">URL da foto de perfil</Label>
+                    <Input value={meta.profilePictureUrl || ""} onChange={(e) => setMeta({ ...meta, profilePictureUrl: e.target.value })} placeholder="https://... (URL da imagem)" className="bg-secondary border-border" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Recado (sobre)</Label>
+                    <Input value={meta.profileDescription || ""} onChange={(e) => setMeta({ ...meta, profileDescription: e.target.value })} placeholder="Recado do perfil" className="bg-secondary border-border" />
+                  </div>
+                </div>
               </div>
 
               <Button onClick={handleSave} disabled={saving} className="w-full h-11">

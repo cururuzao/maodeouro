@@ -1,13 +1,23 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, RefreshCw, Play, BarChart3, Hash, Loader2, StopCircle } from "lucide-react";
+import { Send, RefreshCw, Play, BarChart3, Hash, Loader2, StopCircle, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { listInstances, type ZApiInstance } from "@/lib/z-api";
+import {
+  listInstances,
+  type ZApiInstance,
+  muteChat,
+  archiveChat,
+  deleteChat,
+  updateProfileName,
+  updateProfilePicture,
+  updateProfileDescription,
+} from "@/lib/z-api";
 import { sendTemplateMessage, replaceVariables } from "@/lib/send-template-message";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -51,7 +61,7 @@ const DisparosPage = () => {
   const [selectedList, setSelectedList] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [delay, setDelay] = useState("3");
-
+  const [autoStart, setAutoStart] = useState(false);
   // Execution state
   const [running, setRunning] = useState(false);
   const [currentDisparo, setCurrentDisparo] = useState<string | null>(null);
@@ -90,6 +100,37 @@ const DisparosPage = () => {
     const template = templates.find((t) => t.id === selectedTemplate);
     if (!template) return;
 
+    // If auto_start is on, create as pending and let the cron handle it
+    if (autoStart) {
+      const { data: leads } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("list_id", selectedList);
+
+      const { error: dErr } = await supabase
+        .from("disparos")
+        .insert({
+          instance_name: inst.instance_name,
+          template_id: selectedTemplate,
+          list_id: selectedList,
+          status: "pending",
+          total: leads?.length || 0,
+          sent: 0,
+          failed: 0,
+          user_id: user?.id,
+          z_api_instance_id: inst.id,
+          auto_start: true,
+        } as any);
+
+      if (dErr) {
+        toast({ title: "Erro ao criar disparo", description: dErr.message, variant: "destructive" });
+      } else {
+        toast({ title: "Disparo agendado! ⏳", description: "Será iniciado automaticamente quando a instância conectar." });
+        loadData();
+      }
+      return;
+    }
+
     const { data: leads, error } = await supabase
       .from("leads")
       .select("phone, name, extra_data")
@@ -98,6 +139,18 @@ const DisparosPage = () => {
     if (error || !leads || leads.length === 0) {
       toast({ title: "Nenhum lead encontrado nesta lista", variant: "destructive" });
       return;
+    }
+
+    // Update profile before sending
+    const meta = template.metadata || {};
+    if (meta.profileName) {
+      try { await updateProfileName(inst, meta.profileName); } catch { /* ignore */ }
+    }
+    if (meta.profilePictureUrl) {
+      try { await updateProfilePicture(inst, meta.profilePictureUrl); } catch { /* ignore */ }
+    }
+    if (meta.profileDescription) {
+      try { await updateProfileDescription(inst, meta.profileDescription); } catch { /* ignore */ }
     }
 
     const { data: disparo, error: dErr } = await supabase
@@ -138,6 +191,16 @@ const DisparosPage = () => {
       try {
         await sendTemplateMessage(inst, lead.phone, text, template.type, template.metadata || {});
         sent++;
+
+        // Post-send: Mute → Archive → Delete
+        try {
+          await muteChat(inst, lead.phone);
+          await new Promise((r) => setTimeout(r, 300));
+          await archiveChat(inst, lead.phone);
+          await new Promise((r) => setTimeout(r, 300));
+          await deleteChat(inst, lead.phone);
+        } catch { /* ignore post-send errors */ }
+
       } catch {
         failed++;
       }
@@ -246,10 +309,17 @@ const DisparosPage = () => {
               </select>
             </div>
           </div>
-          <div className="flex items-end gap-4">
+          <div className="flex items-end gap-4 flex-wrap">
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Intervalo (seg)</Label>
               <Input type="number" value={delay} onChange={(e) => setDelay(e.target.value)} min="1" max="30" className="h-10 bg-secondary border-border w-28" />
+            </div>
+            <div className="flex items-center gap-2 pb-1">
+              <Switch checked={autoStart} onCheckedChange={setAutoStart} id="auto-start" />
+              <Label htmlFor="auto-start" className="text-sm text-muted-foreground flex items-center gap-1 cursor-pointer">
+                <Zap className="w-3.5 h-3.5" />
+                Auto-iniciar ao conectar
+              </Label>
             </div>
             {running ? (
               <Button variant="destructive" onClick={stopDisparo} className="h-10">
