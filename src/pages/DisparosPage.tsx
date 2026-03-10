@@ -108,6 +108,7 @@ const DisparosPage = () => {
         total: leads.length,
         sent: 0,
         failed: 0,
+        user_id: user?.id,
       })
       .select()
       .single();
