@@ -36,7 +36,7 @@ interface Disparo {
 
 const DisparosPage = () => {
   const { user } = useAuth();
-  const [instances, setInstances] = useState<Instance[]>([]);
+  const [instances, setInstances] = useState<{ name: string }[]>([]);
   const [lists, setLists] = useState<LeadList[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [disparos, setDisparos] = useState<Disparo[]>([]);
@@ -67,9 +67,12 @@ const DisparosPage = () => {
       supabase.from("disparos").select("*").order("started_at", { ascending: false }).limit(50),
     ]);
 
-    const instList = Array.isArray(instancesRes) ? instancesRes : [];
+    const instList = (Array.isArray(instancesRes) ? instancesRes : []).map((item: any) => {
+      const name = item?.instance?.instanceName || item?.name || "unknown";
+      return { name };
+    });
     setInstances(instList);
-    if (instList.length > 0) setSelectedInstance(instList[0].instance.instanceName);
+    if (instList.length > 0) setSelectedInstance(instList[0].name);
 
     setLists(listsRes.data || []);
     setTemplates(templatesRes.data || []);
@@ -236,8 +239,8 @@ const DisparosPage = () => {
               <Label className="text-sm text-muted-foreground">Instância</Label>
               <select value={selectedInstance} onChange={(e) => setSelectedInstance(e.target.value)} className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground">
                 {instances.length === 0 && <option value="">Nenhuma instância</option>}
-                {instances.map((inst) => (
-                  <option key={inst.instance.instanceName} value={inst.instance.instanceName}>{inst.instance.instanceName}</option>
+                {instances.map((inst: any) => (
+                  <option key={inst.name} value={inst.name}>{inst.name}</option>
                 ))}
               </select>
             </div>
