@@ -88,7 +88,7 @@ const InstancesPage = () => {
   const handlePairWithPhone = async () => {
     if (!connectingInstance || !phoneNumber.trim()) return;
     try {
-      const result = await connectInstance(connectingInstance);
+      const result = await connectInstance(connectingInstance, phoneNumber.trim());
       if (result?.pairingCode) {
         setPairingCode(result.pairingCode);
       } else {
