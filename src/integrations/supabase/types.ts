@@ -14,7 +14,140 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      disparos: {
+        Row: {
+          failed: number
+          finished_at: string | null
+          id: string
+          instance_name: string
+          list_id: string | null
+          sent: number
+          started_at: string
+          status: string
+          template_id: string | null
+          total: number
+        }
+        Insert: {
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          instance_name: string
+          list_id?: string | null
+          sent?: number
+          started_at?: string
+          status?: string
+          template_id?: string | null
+          total?: number
+        }
+        Update: {
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          instance_name?: string
+          list_id?: string | null
+          sent?: number
+          started_at?: string
+          status?: string
+          template_id?: string | null
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disparos_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lead_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disparos_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_lists: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          created_at: string
+          extra_data: Json | null
+          id: string
+          list_id: string
+          name: string | null
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          extra_data?: Json | null
+          id?: string
+          list_id: string
+          name?: string | null
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          extra_data?: Json | null
+          id?: string
+          list_id?: string
+          name?: string | null
+          phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lead_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      templates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          name: string
+          type?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
