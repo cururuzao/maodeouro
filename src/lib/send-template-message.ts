@@ -76,31 +76,22 @@ export async function sendTemplateMessage(
         return sendText(inst, phone, text);
       }
 
-      const hasUrlOrCall = allButtons.some((b) => b.type === "url" || b.type === "call");
-      if (hasUrlOrCall) {
-        return sendButtonActions(
-          inst,
-          phone,
-          text,
-          metadata.footer || "",
-          allButtons.map((b) => ({
-            id: b.id,
-            label: b.text,
-            type: b.type,
-            url: b.url,
-            phoneNumber: b.phoneNumber,
-          }))
-        );
+      // Fallback: send buttons as formatted text for maximum compatibility
+      // (Z-API interactive button endpoints may silently fail on some plans)
+      let fullText = text;
+      for (const btn of allButtons) {
+        if (btn.type === "url" && btn.url) {
+          fullText += `\n\n🔗 ${btn.text}: ${btn.url}`;
+        } else if (btn.type === "call" && btn.phoneNumber) {
+          fullText += `\n\n📞 ${btn.text}: ${btn.phoneNumber}`;
+        } else {
+          fullText += `\n\n▪️ ${btn.text}`;
+        }
       }
-
-      // Reply-only buttons
-      return sendButtonList(
-        inst,
-        phone,
-        text,
-        metadata.footer || "",
-        allButtons.map((b) => ({ id: b.id, label: b.text }))
-      );
+      if (metadata.footer) {
+        fullText += `\n\n_${metadata.footer}_`;
+      }
+      return sendText(inst, phone, fullText);
     }
 
     case "media": {
