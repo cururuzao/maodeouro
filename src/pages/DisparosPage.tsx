@@ -67,9 +67,12 @@ const DisparosPage = () => {
       supabase.from("disparos").select("*").order("started_at", { ascending: false }).limit(50),
     ]);
 
-    const instList = Array.isArray(instancesRes) ? instancesRes : [];
+    const instList = (Array.isArray(instancesRes) ? instancesRes : []).map((item: any) => {
+      const name = item?.instance?.instanceName || item?.name || "unknown";
+      return { name };
+    });
     setInstances(instList);
-    if (instList.length > 0) setSelectedInstance(instList[0].instance.instanceName);
+    if (instList.length > 0) setSelectedInstance(instList[0].name);
 
     setLists(listsRes.data || []);
     setTemplates(templatesRes.data || []);
