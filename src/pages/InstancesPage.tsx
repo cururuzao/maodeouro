@@ -33,6 +33,7 @@ const InstancesPage = () => {
   const [instances, setInstances] = useState<NormalizedInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
+  const [newIntegration, setNewIntegration] = useState<"WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS">("WHATSAPP-BAILEYS");
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
