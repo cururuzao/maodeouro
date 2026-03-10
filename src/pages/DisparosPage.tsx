@@ -66,7 +66,7 @@ const DisparosPage = () => {
     const [instancesRes, listsRes, templatesRes, disparosRes] = await Promise.all([
       fetchInstances().catch(() => []),
       supabase.from("lead_lists").select("id, name").order("created_at", { ascending: false }),
-      supabase.from("templates").select("id, name, content").order("created_at", { ascending: false }),
+      supabase.from("templates").select("id, name, type, content, metadata").order("created_at", { ascending: false }),
       supabase.from("disparos").select("*").order("started_at", { ascending: false }).limit(50),
     ]);
 
