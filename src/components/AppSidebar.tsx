@@ -67,8 +67,8 @@ const AppSidebar = () => {
       {/* Logo */}
       <div className="p-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full border-2 border-primary flex items-center justify-center">
-            <div className="w-2 h-2 rounded-full bg-primary" />
+          <div className="w-9 h-9 rounded-full border-2 border-primary flex items-center justify-center bg-primary/10">
+            <span className="text-lg">✋</span>
           </div>
           <div>
             <h1 className="text-base font-bold text-sidebar-foreground">Mão de Ouro</h1>
