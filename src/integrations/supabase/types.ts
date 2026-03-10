@@ -224,6 +224,24 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       z_api_instances: {
         Row: {
           client_token: string
@@ -262,10 +280,109 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_get_all_disparos: {
+        Args: never
+        Returns: {
+          auto_start: boolean
+          failed: number
+          finished_at: string | null
+          id: string
+          instance_name: string
+          list_id: string | null
+          sent: number
+          started_at: string
+          status: string
+          template_id: string | null
+          total: number
+          user_id: string | null
+          z_api_instance_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "disparos"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_get_all_lead_lists: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "lead_lists"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_get_all_profiles: {
+        Args: never
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_get_all_templates: {
+        Args: never
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          name: string
+          type: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "templates"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_get_all_z_api_instances: {
+        Args: never
+        Returns: {
+          client_token: string
+          created_at: string
+          id: string
+          instance_id: string
+          instance_name: string
+          instance_token: string
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "z_api_instances"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_get_stats: { Args: never; Returns: Json }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -392,6 +509,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
