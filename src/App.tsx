@@ -3,6 +3,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import InstancesPage from "./pages/InstancesPage";
@@ -23,22 +27,26 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/instances" element={<InstancesPage />} />
-          <Route path="/disparos" element={<DisparosPage />} />
-          <Route path="/conexoes" element={<ConexoesPage />} />
-          <Route path="/leads" element={<LeadsPage />} />
-          <Route path="/templates" element={<TemplatesPage />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/transacoes" element={<PlaceholderPage />} />
-          <Route path="/integracoes" element={<PlaceholderPage />} />
-          <Route path="/ferramentas" element={<PlaceholderPage />} />
-          <Route path="/admin" element={<PlaceholderPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/instances" element={<ProtectedRoute><InstancesPage /></ProtectedRoute>} />
+            <Route path="/disparos" element={<ProtectedRoute><DisparosPage /></ProtectedRoute>} />
+            <Route path="/conexoes" element={<ProtectedRoute><ConexoesPage /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
+            <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/transacoes" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+            <Route path="/integracoes" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+            <Route path="/ferramentas" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
