@@ -131,6 +131,16 @@ export async function getPhoneCode(inst: ZApiInstance, phone: string): Promise<{
   return apiGet(inst, `phone-code/${phone}`);
 }
 
+// ---------- Mobile Registration Flow ----------
+
+export async function requestRegistrationCode(inst: ZApiInstance, ddi: string, phone: string, method: string = "sms"): Promise<any> {
+  return apiPost(inst, "mobile/request-registration-code", { ddi, phone, method });
+}
+
+export async function confirmRegistrationCode(inst: ZApiInstance, code: string): Promise<any> {
+  return apiPost(inst, "mobile/confirm-registration-code", { code });
+}
+
 // ---------- Messages ----------
 
 export async function sendText(inst: ZApiInstance, phone: string, message: string): Promise<any> {
