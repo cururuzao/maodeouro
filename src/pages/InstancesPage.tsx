@@ -55,6 +55,15 @@ const InstancesPage = () => {
 
   useEffect(() => { loadInstances(); }, [loadInstances]);
 
+  // Pre-fill Cloud API token from saved config
+  useEffect(() => {
+    loadConfig().then((config) => {
+      if (config?.cloudApiToken) {
+        setBusinessToken(config.cloudApiToken);
+      }
+    });
+  }, []);
+
   const handleCreate = async () => {
     if (!newName.trim()) return;
     if (newIntegration === "WHATSAPP-BUSINESS" && !businessToken.trim()) {
