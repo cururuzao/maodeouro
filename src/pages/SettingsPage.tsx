@@ -74,7 +74,22 @@ const SettingsPage = () => {
             />
           </div>
 
-          <Button onClick={handleSave} disabled={testing} className="w-full h-11">
+          <div className="space-y-2">
+            <Label className="text-sm text-muted-foreground">Token Cloud API (Meta)</Label>
+            <Input
+              type="password"
+              value={cloudApiToken}
+              onChange={(e) => setCloudApiToken(e.target.value)}
+              placeholder="Token de acesso do WhatsApp Business (opcional)"
+              className="h-10 bg-secondary border-border font-mono text-xs"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Usado ao criar instâncias Cloud API. Obtenha em{" "}
+              <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                Meta Business
+              </a>
+            </p>
+          </div>
             {testing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
