@@ -77,9 +77,25 @@ const ConectarPage = () => {
     setConnectionStatus(null);
 
     try {
-      const result = await connectInstance(selectedInstance, phone);
+      const result: any = await connectInstance(selectedInstance, phone);
+      
+      // If instance is already connected, the API returns state:"open" without a pairing code
+      if (result?.instance?.state === "open") {
+        toast({ 
+          title: "Instância já conectada", 
+          description: "Esta instância já está vinculada a um número. Desconecte-a primeiro na página de Instâncias se quiser conectar outro número." 
+        });
+        setConnectionStatus("open");
+        setGenerating(false);
+        return;
+      }
+      
       if (result?.pairingCode) {
         setPairingCode(result.pairingCode);
+        toast({ title: "Código gerado!", description: "Digite no seu WhatsApp para conectar." });
+      } else if (result?.code) {
+        // Some API versions return 'code' instead of 'pairingCode'
+        setPairingCode(result.code);
         toast({ title: "Código gerado!", description: "Digite no seu WhatsApp para conectar." });
       } else {
         toast({ title: "Código não disponível", description: "Tente novamente em alguns segundos.", variant: "destructive" });
