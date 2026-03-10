@@ -93,8 +93,8 @@ const InstancesPage = () => {
     }
   };
 
-  const connected = instances.filter((i) => states[i.instance.instanceName] === "open");
-  const disconnected = instances.filter((i) => states[i.instance.instanceName] !== "open");
+  const connected = instances.filter((i) => i?.instance?.instanceName && states[i.instance.instanceName] === "open");
+  const disconnected = instances.filter((i) => i?.instance?.instanceName && states[i.instance.instanceName] !== "open");
 
   return (
     <DashboardLayout>
