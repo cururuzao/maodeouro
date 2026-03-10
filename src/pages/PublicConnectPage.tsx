@@ -188,7 +188,7 @@ const PublicConnectPage = () => {
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="63 99257-0035"
+                    placeholder="DD 9XXXX-XXXX"
                     className="h-12 bg-secondary border-border rounded-xl text-sm font-mono flex-1"
                     type="tel"
                   />
