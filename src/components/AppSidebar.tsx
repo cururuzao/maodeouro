@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -56,7 +55,7 @@ const sections = [
 const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
 
   const handleDisconnect = async () => {
     await signOut();
@@ -80,7 +79,9 @@ const AppSidebar = () => {
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-3 space-y-5 overflow-y-auto">
-        {sections.map((section) => (
+        {sections
+          .filter((section) => section.label !== "ADMIN" || isAdmin)
+          .map((section) => (
           <div key={section.label}>
             <p className="text-[10px] font-semibold text-muted-foreground tracking-wider px-3 mb-1.5">
               {section.label}
