@@ -396,8 +396,10 @@ const TemplatesPage = () => {
         {/* Buttons */}
         {tType === "buttons" && (m.buttons || []).length > 0 && (
           <div className="space-y-1 mt-1">
-            {(m.buttons || []).map((btn, i) => (
-              <div key={i} className="bg-card rounded-lg py-2 text-center text-xs text-primary font-medium shadow-sm">
+            {(m.buttons || []).map((btn: any, i: number) => (
+              <div key={i} className="bg-card rounded-lg py-2 text-center text-xs text-primary font-medium shadow-sm flex items-center justify-center gap-1">
+                {btn.type === "url" && <span>🔗</span>}
+                {btn.type === "call" && <span>📞</span>}
                 {btn.text || `Botão ${i + 1}`}
               </div>
             ))}

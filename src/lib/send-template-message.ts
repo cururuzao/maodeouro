@@ -11,9 +11,17 @@ import {
   sendLocation,
 } from "@/lib/evolution-api";
 
+interface TemplateButton {
+  id: string;
+  text: string;
+  type: "reply" | "url" | "call";
+  url?: string;
+  phoneNumber?: string;
+}
+
 interface TemplateMetadata {
   footer?: string;
-  buttons?: { id: string; text: string }[];
+  buttons?: TemplateButton[];
   listButtonText?: string;
   listSections?: { title: string; rows: { id: string; title: string; description?: string }[] }[];
   mediaType?: "image" | "video" | "document" | "audio";
@@ -57,21 +65,59 @@ export async function sendTemplateMessage(
 ): Promise<any> {
   switch (type) {
     case "buttons": {
-      const buttons = (metadata.buttons || []).map((btn) => ({
-        buttonId: btn.id,
-        buttonText: { displayText: btn.text },
-      }));
+      const buttons = (metadata.buttons || []).map((btn) => {
+        // Build button object based on type
+        if (btn.type === "url") {
+          return {
+            type: "url" as const,
+            displayText: btn.text,
+            url: btn.url || "",
+          };
+        }
+        if (btn.type === "call") {
+          return {
+            type: "call" as const,
+            displayText: btn.text,
+            phoneNumber: btn.phoneNumber || "",
+          };
+        }
+        // Default: reply button
+        return {
+          type: "reply" as const,
+          displayText: btn.text,
+          id: btn.id,
+        };
+      });
+
       if (buttons.length === 0) {
         return sendTextMessage(instanceName, number, text);
       }
-      return sendButtons(
-        instanceName,
-        number,
-        text, // title
-        "", // description (content is the title)
-        metadata.footer || "",
-        buttons
-      );
+
+      // Use raw API call for buttons since we need flexible button types
+      const config = await import("@/lib/evolution-api").then(m => m.loadConfig());
+      if (!config) throw new Error("Evolution API não configurada");
+
+      const url = `${config.baseUrl.replace(/\/$/, "")}/message/sendButtons/${instanceName}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: config.apiKey,
+        },
+        body: JSON.stringify({
+          number,
+          title: text,
+          description: "",
+          footer: metadata.footer || "",
+          buttons,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Erro ${res.status}: ${errText}`);
+      }
+      return res.json();
     }
 
     case "list": {
@@ -89,8 +135,8 @@ export async function sendTemplateMessage(
       return sendList(
         instanceName,
         number,
-        text, // title
-        "", // description
+        text,
+        "",
         metadata.footer || "",
         metadata.listButtonText || "Ver opções",
         sections
@@ -106,7 +152,7 @@ export async function sendTemplateMessage(
         number,
         metadata.mediaType || "image",
         metadata.mediaUrl,
-        text, // caption
+        text,
         metadata.fileName
       );
     }
@@ -115,7 +161,6 @@ export async function sendTemplateMessage(
       if (!metadata.contactName || !metadata.contactNumber) {
         return sendTextMessage(instanceName, number, text);
       }
-      // Send the text first, then the contact
       if (text.trim()) {
         await sendTextMessage(instanceName, number, text);
       }
@@ -131,7 +176,6 @@ export async function sendTemplateMessage(
       if (!metadata.latitude || !metadata.longitude) {
         return sendTextMessage(instanceName, number, text);
       }
-      // Send text first, then location
       if (text.trim()) {
         await sendTextMessage(instanceName, number, text);
       }
