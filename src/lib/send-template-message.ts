@@ -142,27 +142,25 @@ export async function sendTemplateMessage(
     }
 
     case "list": {
-      // Z-API send-option-list endpoint
       const sections = metadata.listSections || [];
       if (sections.length === 0) {
         return sendText(inst, phone, text);
       }
-      return apiPostDirect(inst, "send-option-list", {
+      return sendOptionList(
+        inst,
         phone,
-        optionList: {
-          title: metadata.listButtonText || "Ver opções",
-          message: text,
-          footer: metadata.footer || "",
-          optionSections: sections.map((s) => ({
-            title: s.title,
-            rows: s.rows.map((r) => ({
-              title: r.title,
-              description: r.description || "",
-              rowId: r.id,
-            })),
+        metadata.listButtonText || "Ver opções",
+        text,
+        metadata.footer || "",
+        sections.map((s) => ({
+          title: s.title,
+          rows: s.rows.map((r) => ({
+            title: r.title,
+            description: r.description || "",
+            rowId: r.id,
           })),
-        },
-      });
+        }))
+      );
     }
 
     default: // "text" / "Texto"
