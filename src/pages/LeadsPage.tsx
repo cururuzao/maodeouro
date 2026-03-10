@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LeadList {
   id: string;
@@ -17,6 +18,7 @@ interface LeadList {
 }
 
 const LeadsPage = () => {
+  const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [listName, setListName] = useState("");
   const [description, setDescription] = useState("");
@@ -62,7 +64,7 @@ const LeadsPage = () => {
     // Create the list
     const { data: newList, error: listError } = await supabase
       .from("lead_lists")
-      .insert({ name: listName, description })
+      .insert({ name: listName, description, user_id: user?.id })
       .select()
       .single();
 

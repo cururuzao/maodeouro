@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchInstances, sendTextMessage, type Instance } from "@/lib/evolution-api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LeadList {
   id: string;
@@ -34,6 +35,7 @@ interface Disparo {
 }
 
 const DisparosPage = () => {
+  const { user } = useAuth();
   const [instances, setInstances] = useState<Instance[]>([]);
   const [lists, setLists] = useState<LeadList[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -106,6 +108,7 @@ const DisparosPage = () => {
         total: leads.length,
         sent: 0,
         failed: 0,
+        user_id: user?.id,
       })
       .select()
       .single();

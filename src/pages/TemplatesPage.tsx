@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Template {
   id: string;
@@ -17,6 +18,7 @@ interface Template {
 }
 
 const TemplatesPage = () => {
+  const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
@@ -45,7 +47,7 @@ const TemplatesPage = () => {
   const handleCreate = async () => {
     if (!name.trim() || !content.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("templates").insert({ name, type, content });
+    const { error } = await supabase.from("templates").insert({ name, type, content, user_id: user?.id });
     if (error) {
       toast({ title: "Erro ao criar template", description: error.message, variant: "destructive" });
     } else {

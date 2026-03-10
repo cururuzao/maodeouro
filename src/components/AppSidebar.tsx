@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   Smartphone,
@@ -48,10 +49,12 @@ const sections = [
 const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     clearConfig();
-    navigate("/");
+    await signOut();
+    navigate("/login");
   };
 
   return (
