@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
-import { getConfig, saveConfig, testConnection } from "@/lib/evolution-api";
+import { loadConfig, saveConfigToDB, saveConfig, testConnection } from "@/lib/evolution-api";
 
 const SettingsPage = () => {
   const [baseUrl, setBaseUrl] = useState("");
@@ -14,11 +14,12 @@ const SettingsPage = () => {
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
   useEffect(() => {
-    const config = getConfig();
-    if (config) {
-      setBaseUrl(config.baseUrl);
-      setApiKey(config.apiKey);
-    }
+    loadConfig().then((config) => {
+      if (config) {
+        setBaseUrl(config.baseUrl);
+        setApiKey(config.apiKey);
+      }
+    });
   }, []);
 
   const handleSave = async () => {
@@ -32,6 +33,7 @@ const SettingsPage = () => {
     setTesting(false);
 
     if (ok) {
+      await saveConfigToDB({ baseUrl, apiKey });
       setStatus("success");
       toast({ title: "Configuração salva e testada!" });
     } else {

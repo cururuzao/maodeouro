@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getConfig } from "@/lib/evolution-api";
+import { loadConfig } from "@/lib/evolution-api";
+import { Loader2 } from "lucide-react";
 import AppSidebar from "./AppSidebar";
 
 interface DashboardLayoutProps {
@@ -9,12 +10,25 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!getConfig()) {
-      navigate("/", { replace: true });
-    }
+    loadConfig().then((config) => {
+      if (!config) {
+        navigate("/", { replace: true });
+      } else {
+        setReady(true);
+      }
+    });
   }, [navigate]);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">

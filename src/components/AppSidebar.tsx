@@ -13,7 +13,7 @@ import {
   Shield,
   LogOut,
 } from "lucide-react";
-import { clearConfig } from "@/lib/evolution-api";
+import { clearCachedConfig } from "@/lib/evolution-api";
 
 const sections = [
   {
@@ -52,7 +52,7 @@ const AppSidebar = () => {
   const { signOut } = useAuth();
 
   const handleDisconnect = async () => {
-    clearConfig();
+    clearCachedConfig();
     await signOut();
     navigate("/login");
   };
