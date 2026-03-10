@@ -14,31 +14,58 @@ import {
   sendButtonList,
   sendButtonActions,
   sendOptionList,
+  sendSticker,
+  sendGif,
+  sendPoll,
+  sendPix,
   type ZApiInstance,
 } from "@/lib/z-api";
 
 interface TemplateButton {
   id: string;
   text: string;
-  type: "reply" | "url" | "call";
+  type: "reply" | "url" | "call" | "copy";
   url?: string;
   phoneNumber?: string;
 }
 
 interface TemplateMetadata {
   footer?: string;
+  title?: string;
   buttons?: TemplateButton[];
   listButtonText?: string;
   listSections?: { title: string; rows: { id: string; title: string; description?: string }[] }[];
   mediaType?: "image" | "video" | "document" | "audio";
   mediaUrl?: string;
   fileName?: string;
+  viewOnce?: boolean;
   contactName?: string;
   contactNumber?: string;
   latitude?: string;
   longitude?: string;
   locationName?: string;
   locationAddress?: string;
+  // Link
+  linkUrl?: string;
+  linkTitle?: string;
+  linkDescription?: string;
+  linkImage?: string;
+  // Sticker
+  stickerUrl?: string;
+  stickerAuthor?: string;
+  // GIF
+  gifUrl?: string;
+  // Poll
+  pollOptions?: { name: string }[];
+  pollMaxOptions?: number;
+  // PIX
+  pixKey?: string;
+  pixType?: string;
+  merchantName?: string;
+  // Profile customization
+  profileName?: string;
+  profilePictureUrl?: string;
+  profileDescription?: string;
 }
 
 /**
@@ -84,6 +111,8 @@ export async function sendTemplateMessage(
           fullText += `\n\n🔗 ${btn.text}: ${btn.url}`;
         } else if (btn.type === "call" && btn.phoneNumber) {
           fullText += `\n\n📞 ${btn.text}: ${btn.phoneNumber}`;
+        } else if (btn.type === "copy" && btn.url) {
+          fullText += `\n\n📋 ${btn.text}: ${btn.url}`;
         } else {
           fullText += `\n\n▪️ ${btn.text}`;
         }
@@ -155,7 +184,51 @@ export async function sendTemplateMessage(
       );
     }
 
-    default: // "text" / "Texto"
+    case "link": {
+      if (!metadata.linkUrl) {
+        return sendText(inst, phone, text);
+      }
+      return sendLink(
+        inst,
+        phone,
+        text,
+        metadata.linkUrl,
+        metadata.linkTitle,
+        metadata.linkDescription,
+        metadata.linkImage
+      );
+    }
+
+    case "sticker": {
+      if (!metadata.stickerUrl) {
+        return sendText(inst, phone, text);
+      }
+      return sendSticker(inst, phone, metadata.stickerUrl, metadata.stickerAuthor);
+    }
+
+    case "gif": {
+      if (!metadata.gifUrl) {
+        return sendText(inst, phone, text);
+      }
+      return sendGif(inst, phone, metadata.gifUrl, text);
+    }
+
+    case "poll": {
+      const options = metadata.pollOptions || [];
+      if (options.length < 2) {
+        return sendText(inst, phone, text);
+      }
+      return sendPoll(inst, phone, text, options, metadata.pollMaxOptions);
+    }
+
+    case "pix": {
+      if (!metadata.pixKey || !metadata.pixType) {
+        return sendText(inst, phone, text);
+      }
+      return sendPix(inst, phone, metadata.pixKey, metadata.pixType, metadata.merchantName, text);
+    }
+
+    default: // "text"
       return sendText(inst, phone, text);
   }
 }
