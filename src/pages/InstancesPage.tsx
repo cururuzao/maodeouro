@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   fetchInstances, createInstance, deleteInstance, connectInstance,
-  logoutInstance,
+  logoutInstance, loadConfig,
 } from "@/lib/evolution-api";
 
 interface NormalizedInstance {
