@@ -78,7 +78,7 @@ const DisparosPage = () => {
     if (instList.length > 0) setSelectedInstance(instList[0].name);
 
     setLists(listsRes.data || []);
-    setTemplates(templatesRes.data || []);
+    setTemplates((templatesRes.data || []).map((t: any) => ({ ...t, metadata: t.metadata || {} })));
     setDisparos((disparosRes.data as Disparo[]) || []);
     setLoading(false);
   };
