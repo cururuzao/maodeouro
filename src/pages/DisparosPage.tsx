@@ -247,18 +247,25 @@ const DisparosPage = () => {
       toast({ title: "Selecione um template", variant: "destructive" });
       return;
     }
-    const phone = testPhone.replace(/\D/g, "");
+    let phone = testPhone.replace(/\D/g, "");
     if (!phone || phone.length < 10) {
-      toast({ title: "Digite um número válido", variant: "destructive" });
+      toast({ title: "Digite um número válido (ex: 11999999999)", variant: "destructive" });
       return;
+    }
+    // Auto-add Brazil country code
+    if (!phone.startsWith("55")) {
+      phone = "55" + phone;
     }
     const template = templates.find((t) => t.id === selectedTemplate);
     if (!template) return;
 
     setSendingTest(true);
+    console.log("[Teste] Enviando para:", phone, "Template:", template.name, "Tipo:", template.type);
     try {
       const text = replaceVariables(template.content, { name: "Teste", phone });
-      await sendTemplateMessage(inst, phone, text, template.type, template.metadata || {});
+      console.log("[Teste] Texto:", text);
+      const result = await sendTemplateMessage(inst, phone, text, template.type, template.metadata || {});
+      console.log("[Teste] Resultado:", JSON.stringify(result));
       toast({ title: "✅ Mensagem de teste enviada!", description: `Enviada para ${phone}` });
     } catch (err: any) {
       toast({ title: "Erro ao enviar teste", description: err.message, variant: "destructive" });
