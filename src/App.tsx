@@ -16,6 +16,7 @@ import LeadsPage from "./pages/LeadsPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import Messages from "./pages/Messages";
 import SettingsPage from "./pages/SettingsPage";
+import ConectarPage from "./pages/ConectarPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
 
