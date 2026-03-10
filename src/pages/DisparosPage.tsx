@@ -374,6 +374,30 @@ const DisparosPage = () => {
               <Progress value={progress.total > 0 ? ((progress.sent + progress.failed) / progress.total) * 100 : 0} className="h-2" />
             </div>
           )}
+
+          {/* Test send */}
+          <div className="flex items-end gap-3 pt-3 border-t border-border">
+            <div className="space-y-2 flex-1 max-w-xs">
+              <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                <TestTube className="w-3.5 h-3.5" /> Enviar teste
+              </Label>
+              <Input
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+                placeholder="5511999999999"
+                className="h-10 bg-secondary border-border"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={sendTestMessage}
+              disabled={sendingTest || !selectedTemplate || !selectedInstanceId}
+              className="h-10"
+            >
+              {sendingTest ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              Enviar Teste
+            </Button>
+          </div>
         </div>
 
         {/* Executions table */}
