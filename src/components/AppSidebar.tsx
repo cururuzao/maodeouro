@@ -52,7 +52,7 @@ const AppSidebar = () => {
   const { signOut } = useAuth();
 
   const handleDisconnect = async () => {
-    clearConfig();
+    clearCachedConfig();
     await signOut();
     navigate("/login");
   };
