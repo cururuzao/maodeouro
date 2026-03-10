@@ -12,6 +12,7 @@ import {
   sendLocation,
   sendLink,
   sendButtonList,
+  sendOptionList,
   type ZApiInstance,
 } from "@/lib/z-api";
 
@@ -137,6 +138,28 @@ export async function sendTemplateMessage(
         parseFloat(metadata.longitude),
         metadata.locationName,
         metadata.locationAddress
+      );
+    }
+
+    case "list": {
+      const sections = metadata.listSections || [];
+      if (sections.length === 0) {
+        return sendText(inst, phone, text);
+      }
+      return sendOptionList(
+        inst,
+        phone,
+        metadata.listButtonText || "Ver opções",
+        text,
+        metadata.footer || "",
+        sections.map((s) => ({
+          title: s.title,
+          rows: s.rows.map((r) => ({
+            title: r.title,
+            description: r.description || "",
+            rowId: r.id,
+          })),
+        }))
       );
     }
 
