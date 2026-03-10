@@ -76,11 +76,21 @@ const InstancesPage = () => {
     }
   };
 
-  const handleConnect = async (name: string) => {
+  const handleConnect = (name: string) => {
+    setConnectingInstance(name);
+    setPhoneNumber("");
+    setPairingCode(null);
+  };
+
+  const handlePairWithPhone = async () => {
+    if (!connectingInstance || !phoneNumber.trim()) return;
     try {
-      const result = await connectInstance(name);
-      if (result?.base64) setQrData({ name, data: result });
-      else if (result?.pairingCode) toast({ title: `Código: ${result.pairingCode}` });
+      const result = await connectInstance(connectingInstance);
+      if (result?.pairingCode) {
+        setPairingCode(result.pairingCode);
+      } else {
+        toast({ title: "Código não disponível", description: "Tente novamente", variant: "destructive" });
+      }
     } catch (err: any) {
       toast({ title: "Erro ao conectar", description: err.message, variant: "destructive" });
     }
