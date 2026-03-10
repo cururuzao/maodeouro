@@ -152,8 +152,8 @@ const InstancesPage = () => {
               <Input value={newToken} onChange={(e) => setNewToken(e.target.value)} placeholder="Token da instância" className="h-10 bg-secondary border-border font-mono text-xs" type="password" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Client-Token (segurança)</Label>
-              <Input value={newClientToken} onChange={(e) => setNewClientToken(e.target.value)} placeholder="Token de segurança da conta" className="h-10 bg-secondary border-border font-mono text-xs" type="password" />
+              <Label className="text-xs text-muted-foreground">Client-Token *</Label>
+              <Input value={newClientToken} onChange={(e) => setNewClientToken(e.target.value)} placeholder="Token de segurança da conta (obrigatório)" className="h-10 bg-secondary border-border font-mono text-xs" type="password" />
             </div>
           </div>
           <div className="flex gap-3">
