@@ -153,7 +153,7 @@ const TemplatesPage = () => {
   const previewTemplate = selectedTemplate
     ? (() => {
         let text = selectedTemplate.content;
-        VARIABLES.forEach((v) => { text = text.replaceAll(v.tag, v.sample); });
+        VARIABLES.forEach((v) => { text = text.split(v.tag).join(v.sample); });
         return { ...selectedTemplate, previewContent: text };
       })()
     : null;
