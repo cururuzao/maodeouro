@@ -21,6 +21,7 @@ const sections = [
     items: [
       { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
       { label: "Instâncias", path: "/instances", icon: Smartphone },
+      { label: "Conectar", path: "/conectar", icon: Link2 },
     ],
   },
   {

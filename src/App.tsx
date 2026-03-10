@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/conectar" element={<ProtectedRoute><ConectarPage /></ProtectedRoute>} />
             <Route path="/transacoes" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
             <Route path="/integracoes" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
             <Route path="/ferramentas" element={<ProtectedRoute><PlaceholderPage /></ProtectedRoute>} />
