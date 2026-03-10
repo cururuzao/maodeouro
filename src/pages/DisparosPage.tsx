@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, RefreshCw, Play, BarChart3, Hash, Loader2, StopCircle, Zap } from "lucide-react";
+import { Send, RefreshCw, Play, BarChart3, Hash, Loader2, StopCircle, Zap, TestTube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
