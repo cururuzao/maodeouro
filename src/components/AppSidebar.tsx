@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 import {
   LayoutDashboard,
   Smartphone,
@@ -12,7 +14,11 @@ import {
   Wrench,
   Shield,
   LogOut,
+  Copy,
+  Check,
 } from "lucide-react";
+
+const TEST_CODE = "F46f72bcf09804ebabf2b24ef8e4bd57dS";
 
 
 const sections = [
@@ -101,6 +107,22 @@ const AppSidebar = () => {
           </div>
         ))}
       </nav>
+
+      {/* Test Code */}
+      <div className="px-3 pb-2">
+        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider px-1 mb-1">CÓDIGO TESTE</p>
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(TEST_CODE);
+            toast({ title: "Código copiado!" });
+          }}
+          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md bg-secondary text-xs font-mono text-muted-foreground hover:text-foreground hover:bg-accent transition-colors group"
+          title="Clique para copiar"
+        >
+          <span className="truncate flex-1 text-left">{TEST_CODE}</span>
+          <Copy className="w-3.5 h-3.5 shrink-0 opacity-50 group-hover:opacity-100" />
+        </button>
+      </div>
 
       {/* Bottom */}
       <div className="p-3 border-t border-sidebar-border">
