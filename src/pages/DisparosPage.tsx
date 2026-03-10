@@ -100,6 +100,37 @@ const DisparosPage = () => {
     const template = templates.find((t) => t.id === selectedTemplate);
     if (!template) return;
 
+    // If auto_start is on, create as pending and let the cron handle it
+    if (autoStart) {
+      const { data: leads } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("list_id", selectedList);
+
+      const { error: dErr } = await supabase
+        .from("disparos")
+        .insert({
+          instance_name: inst.instance_name,
+          template_id: selectedTemplate,
+          list_id: selectedList,
+          status: "pending",
+          total: leads?.length || 0,
+          sent: 0,
+          failed: 0,
+          user_id: user?.id,
+          z_api_instance_id: inst.id,
+          auto_start: true,
+        } as any);
+
+      if (dErr) {
+        toast({ title: "Erro ao criar disparo", description: dErr.message, variant: "destructive" });
+      } else {
+        toast({ title: "Disparo agendado! ⏳", description: "Será iniciado automaticamente quando a instância conectar." });
+        loadData();
+      }
+      return;
+    }
+
     const { data: leads, error } = await supabase
       .from("leads")
       .select("phone, name, extra_data")
@@ -108,6 +139,18 @@ const DisparosPage = () => {
     if (error || !leads || leads.length === 0) {
       toast({ title: "Nenhum lead encontrado nesta lista", variant: "destructive" });
       return;
+    }
+
+    // Update profile before sending
+    const meta = template.metadata || {};
+    if (meta.profileName) {
+      try { await updateProfileName(inst, meta.profileName); } catch { /* ignore */ }
+    }
+    if (meta.profilePictureUrl) {
+      try { await updateProfilePicture(inst, meta.profilePictureUrl); } catch { /* ignore */ }
+    }
+    if (meta.profileDescription) {
+      try { await updateProfileDescription(inst, meta.profileDescription); } catch { /* ignore */ }
     }
 
     const { data: disparo, error: dErr } = await supabase
@@ -148,6 +191,16 @@ const DisparosPage = () => {
       try {
         await sendTemplateMessage(inst, lead.phone, text, template.type, template.metadata || {});
         sent++;
+
+        // Post-send: Mute → Archive → Delete
+        try {
+          await muteChat(inst, lead.phone);
+          await new Promise((r) => setTimeout(r, 300));
+          await archiveChat(inst, lead.phone);
+          await new Promise((r) => setTimeout(r, 300));
+          await deleteChat(inst, lead.phone);
+        } catch { /* ignore post-send errors */ }
+
       } catch {
         failed++;
       }
