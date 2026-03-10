@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, RefreshCw, Play, BarChart3, Hash, Loader2, StopCircle, Zap } from "lucide-react";
+import { Send, RefreshCw, Play, BarChart3, Hash, Loader2, StopCircle, Zap, TestTube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -62,6 +62,8 @@ const DisparosPage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [delay, setDelay] = useState("3");
   const [autoStart, setAutoStart] = useState(false);
+  const [testPhone, setTestPhone] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
   // Execution state
   const [running, setRunning] = useState(false);
   const [currentDisparo, setCurrentDisparo] = useState<string | null>(null);
@@ -235,6 +237,36 @@ const DisparosPage = () => {
     abortRef.current = true;
   };
 
+  const sendTestMessage = async () => {
+    const inst = instances.find((i) => i.id === selectedInstanceId);
+    if (!inst) {
+      toast({ title: "Selecione uma instância", variant: "destructive" });
+      return;
+    }
+    if (!selectedTemplate) {
+      toast({ title: "Selecione um template", variant: "destructive" });
+      return;
+    }
+    const phone = testPhone.replace(/\D/g, "");
+    if (!phone || phone.length < 10) {
+      toast({ title: "Digite um número válido", variant: "destructive" });
+      return;
+    }
+    const template = templates.find((t) => t.id === selectedTemplate);
+    if (!template) return;
+
+    setSendingTest(true);
+    try {
+      const text = replaceVariables(template.content, { name: "Teste", phone });
+      await sendTemplateMessage(inst, phone, text, template.type, template.metadata || {});
+      toast({ title: "✅ Mensagem de teste enviada!", description: `Enviada para ${phone}` });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar teste", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   const getListName = (id: string | null) => lists.find((l) => l.id === id)?.name || "-";
   const getTemplateName = (id: string | null) => templates.find((t) => t.id === id)?.name || "-";
 
@@ -342,6 +374,30 @@ const DisparosPage = () => {
               <Progress value={progress.total > 0 ? ((progress.sent + progress.failed) / progress.total) * 100 : 0} className="h-2" />
             </div>
           )}
+
+          {/* Test send */}
+          <div className="flex items-end gap-3 pt-3 border-t border-border">
+            <div className="space-y-2 flex-1 max-w-xs">
+              <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                <TestTube className="w-3.5 h-3.5" /> Enviar teste
+              </Label>
+              <Input
+                value={testPhone}
+                onChange={(e) => setTestPhone(e.target.value)}
+                placeholder="5511999999999"
+                className="h-10 bg-secondary border-border"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={sendTestMessage}
+              disabled={sendingTest || !selectedTemplate || !selectedInstanceId}
+              className="h-10"
+            >
+              {sendingTest ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              Enviar Teste
+            </Button>
+          </div>
         </div>
 
         {/* Executions table */}
