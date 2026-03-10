@@ -11,14 +11,18 @@ import {
   getConnectionState, logoutInstance, type Instance, type QRCodeResponse,
 } from "@/lib/evolution-api";
 
+interface NormalizedInstance {
+  name: string;
+  owner: string;
+  connectionStatus: string;
+}
+
 const InstancesPage = () => {
-  const [instances, setInstances] = useState<Instance[]>([]);
+  const [instances, setInstances] = useState<NormalizedInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [qrData, setQrData] = useState<{ name: string; data: QRCodeResponse } | null>(null);
-  const [states, setStates] = useState<Record<string, string>>({});
   const [phoneNumber, setPhoneNumber] = useState("");
   const [connectingInstance, setConnectingInstance] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
