@@ -1,13 +1,23 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, RefreshCw, Play, BarChart3, Hash, Loader2, StopCircle } from "lucide-react";
+import { Send, RefreshCw, Play, BarChart3, Hash, Loader2, StopCircle, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { listInstances, type ZApiInstance } from "@/lib/z-api";
+import {
+  listInstances,
+  type ZApiInstance,
+  muteChat,
+  archiveChat,
+  deleteChat,
+  updateProfileName,
+  updateProfilePicture,
+  updateProfileDescription,
+} from "@/lib/z-api";
 import { sendTemplateMessage, replaceVariables } from "@/lib/send-template-message";
 import { useAuth } from "@/contexts/AuthContext";
 
