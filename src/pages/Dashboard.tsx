@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Send, DollarSign, TrendingUp, Calculator, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
-import { fetchInstances, type Instance } from "@/lib/evolution-api";
+import { listInstances, getStatus, type ZApiInstance } from "@/lib/z-api";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const chartData = [
@@ -16,11 +16,11 @@ const chartData = [
 ];
 
 const Dashboard = () => {
-  const [instances, setInstances] = useState<Instance[]>([]);
+  const [instanceCount, setInstanceCount] = useState(0);
 
   useEffect(() => {
-    fetchInstances()
-      .then((data) => setInstances(Array.isArray(data) ? data : []))
+    listInstances()
+      .then((data) => setInstanceCount(data.length))
       .catch(() => {});
   }, []);
 

@@ -1,0 +1,190 @@
+/**
+ * Z-API Client
+ * Docs: https://developer.z-api.io
+ * URL pattern: https://api.z-api.io/instances/{instanceId}/token/{token}/{endpoint}
+ * Header: Client-Token for account security
+ */
+
+import { supabase } from "@/integrations/supabase/client";
+
+const Z_API_BASE = "https://api.z-api.io";
+
+export interface ZApiInstance {
+  id: string;
+  user_id: string;
+  instance_name: string;
+  instance_id: string;
+  instance_token: string;
+  client_token: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ZApiStatus {
+  connected: boolean;
+  error?: string;
+  smartphoneConnected: boolean;
+}
+
+// ---------- Instance CRUD (from DB) ----------
+
+export async function listInstances(): Promise<ZApiInstance[]> {
+  const { data, error } = await supabase
+    .from("z_api_instances")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data as any[]) || [];
+}
+
+export async function addInstance(params: {
+  instance_name: string;
+  instance_id: string;
+  instance_token: string;
+  client_token: string;
+}): Promise<ZApiInstance> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado");
+
+  const { data, error } = await supabase
+    .from("z_api_instances")
+    .insert({
+      user_id: user.id,
+      instance_name: params.instance_name,
+      instance_id: params.instance_id,
+      instance_token: params.instance_token,
+      client_token: params.client_token,
+    } as any)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as any;
+}
+
+export async function removeInstance(id: string): Promise<void> {
+  const { error } = await supabase
+    .from("z_api_instances")
+    .delete()
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+}
+
+// ---------- Z-API HTTP helpers ----------
+
+function buildUrl(inst: ZApiInstance, endpoint: string): string {
+  return `${Z_API_BASE}/instances/${inst.instance_id}/token/${inst.instance_token}/${endpoint}`;
+}
+
+function headers(inst: ZApiInstance): Record<string, string> {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (inst.client_token) h["Client-Token"] = inst.client_token;
+  return h;
+}
+
+async function apiGet(inst: ZApiInstance, endpoint: string): Promise<any> {
+  const res = await fetch(buildUrl(inst, endpoint), { headers: headers(inst) });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+async function apiPost(inst: ZApiInstance, endpoint: string, body: any): Promise<any> {
+  const res = await fetch(buildUrl(inst, endpoint), {
+    method: "POST",
+    headers: headers(inst),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Erro ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+// ---------- Instance status / connection ----------
+
+export async function getStatus(inst: ZApiInstance): Promise<ZApiStatus> {
+  return apiGet(inst, "status");
+}
+
+export async function disconnect(inst: ZApiInstance): Promise<any> {
+  return apiGet(inst, "disconnect");
+}
+
+export async function restoreSession(inst: ZApiInstance): Promise<any> {
+  return apiGet(inst, "restore-session");
+}
+
+export async function getQrCode(inst: ZApiInstance): Promise<{ value: string }> {
+  return apiGet(inst, "qr-code/image");
+}
+
+export async function getPhoneCode(inst: ZApiInstance, phone: string): Promise<{ value: string }> {
+  return apiPost(inst, "phone-code", { phone });
+}
+
+// ---------- Messages ----------
+
+export async function sendText(inst: ZApiInstance, phone: string, message: string): Promise<any> {
+  return apiPost(inst, "send-text", { phone, message });
+}
+
+export async function sendImage(inst: ZApiInstance, phone: string, image: string, caption?: string): Promise<any> {
+  return apiPost(inst, "send-image", { phone, image, caption: caption || "" });
+}
+
+export async function sendVideo(inst: ZApiInstance, phone: string, video: string, caption?: string): Promise<any> {
+  return apiPost(inst, "send-video", { phone, video, caption: caption || "" });
+}
+
+export async function sendDocument(inst: ZApiInstance, phone: string, document: string, fileName: string, caption?: string): Promise<any> {
+  return apiPost(inst, "send-document", { phone, document, fileName, caption: caption || "" });
+}
+
+export async function sendAudio(inst: ZApiInstance, phone: string, audio: string): Promise<any> {
+  return apiPost(inst, "send-audio", { phone, audio });
+}
+
+export async function sendContact(inst: ZApiInstance, phone: string, contactName: string, contactPhone: string): Promise<any> {
+  return apiPost(inst, "send-contact", {
+    phone,
+    contactName,
+    contactPhone,
+  });
+}
+
+export async function sendLocation(inst: ZApiInstance, phone: string, lat: number, lng: number, name?: string, address?: string): Promise<any> {
+  return apiPost(inst, "send-location", {
+    phone,
+    latitude: lat,
+    longitude: lng,
+    name: name || "",
+    address: address || "",
+  });
+}
+
+export async function sendButtonList(inst: ZApiInstance, phone: string, message: string, footer: string, buttons: { id: string; label: string }[]): Promise<any> {
+  return apiPost(inst, "send-button-list", {
+    phone,
+    message,
+    footer,
+    buttonList: {
+      buttons: buttons.map(b => ({ id: b.id, label: b.label })),
+    },
+  });
+}
+
+export async function sendLink(inst: ZApiInstance, phone: string, message: string, linkUrl: string, title?: string, description?: string): Promise<any> {
+  return apiPost(inst, "send-link", {
+    phone,
+    message,
+    linkUrl,
+    title: title || "",
+    linkDescription: description || "",
+  });
+}

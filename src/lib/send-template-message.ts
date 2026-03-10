@@ -1,15 +1,19 @@
 /**
- * Sends a message using the correct Evolution API method
+ * Sends a message using the correct Z-API method
  * based on the template type and metadata.
  */
 import {
-  sendTextMessage,
-  sendButtons,
-  sendList,
-  sendMedia,
+  sendText,
+  sendImage,
+  sendVideo,
+  sendDocument,
+  sendAudio,
   sendContact,
   sendLocation,
-} from "@/lib/evolution-api";
+  sendLink,
+  sendButtonList,
+  type ZApiInstance,
+} from "@/lib/z-api";
 
 interface TemplateButton {
   id: string;
@@ -53,12 +57,12 @@ export function replaceVariables(
 }
 
 /**
- * Send a message through the Evolution API using the correct endpoint
+ * Send a message through Z-API using the correct endpoint
  * based on the template type.
  */
 export async function sendTemplateMessage(
-  instanceName: string,
-  number: string,
+  inst: ZApiInstance,
+  phone: string,
   text: string,
   type: string,
   metadata: TemplateMetadata
@@ -67,15 +71,12 @@ export async function sendTemplateMessage(
     case "buttons": {
       const allButtons = metadata.buttons || [];
       if (allButtons.length === 0) {
-        return sendTextMessage(instanceName, number, text);
+        return sendText(inst, phone, text);
       }
 
-      // Check if there are URL or call buttons — these only work on Cloud API.
-      // For Baileys instances, fall back to text with links appended.
+      // URL/call buttons: send as text with links appended
       const hasUrlOrCall = allButtons.some((b) => b.type === "url" || b.type === "call");
-
       if (hasUrlOrCall) {
-        // Build a text fallback with the links/numbers appended
         let fallbackText = text;
         for (const btn of allButtons) {
           if (btn.type === "url" && btn.url) {
@@ -87,102 +88,51 @@ export async function sendTemplateMessage(
         if (metadata.footer) {
           fallbackText += `\n\n_${metadata.footer}_`;
         }
-        return sendTextMessage(instanceName, number, fallbackText);
+        return sendText(inst, phone, fallbackText);
       }
 
-      // Only reply buttons — try native buttons
-      const apiButtons = allButtons.map((btn) => ({
-        type: "reply",
-        displayText: btn.text,
-        id: btn.id,
-      }));
-
-      // Use raw fetch to send with the correct format
-      const config = await import("@/lib/evolution-api").then((m) => m.loadConfig());
-      if (!config) throw new Error("Evolution API não configurada");
-
-      const url = `${config.baseUrl.replace(/\/$/, "")}/message/sendButtons/${instanceName}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", apikey: config.apiKey },
-        body: JSON.stringify({
-          number,
-          title: text,
-          description: "",
-          footer: metadata.footer || "",
-          buttons: apiButtons,
-        }),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Erro ${res.status}: ${errText}`);
-      }
-      return res.json();
-    }
-
-    case "list": {
-      const sections = (metadata.listSections || []).map((section) => ({
-        title: section.title,
-        rows: section.rows.map((row) => ({
-          title: row.title,
-          description: row.description || "",
-          rowId: row.id,
-        })),
-      }));
-      if (sections.length === 0) {
-        return sendTextMessage(instanceName, number, text);
-      }
-      return sendList(
-        instanceName,
-        number,
+      // Reply buttons
+      return sendButtonList(
+        inst,
+        phone,
         text,
-        "",
         metadata.footer || "",
-        metadata.listButtonText || "Ver opções",
-        sections
+        allButtons.map((b) => ({ id: b.id, label: b.text }))
       );
     }
 
     case "media": {
       if (!metadata.mediaUrl) {
-        return sendTextMessage(instanceName, number, text);
+        return sendText(inst, phone, text);
       }
-      return sendMedia(
-        instanceName,
-        number,
-        metadata.mediaType || "image",
-        metadata.mediaUrl,
-        text,
-        metadata.fileName
-      );
+      switch (metadata.mediaType) {
+        case "video":
+          return sendVideo(inst, phone, metadata.mediaUrl, text);
+        case "document":
+          return sendDocument(inst, phone, metadata.mediaUrl, metadata.fileName || "file", text);
+        case "audio":
+          return sendAudio(inst, phone, metadata.mediaUrl);
+        default:
+          return sendImage(inst, phone, metadata.mediaUrl, text);
+      }
     }
 
     case "contact": {
       if (!metadata.contactName || !metadata.contactNumber) {
-        return sendTextMessage(instanceName, number, text);
+        return sendText(inst, phone, text);
       }
-      if (text.trim()) {
-        await sendTextMessage(instanceName, number, text);
-      }
-      return sendContact(
-        instanceName,
-        number,
-        metadata.contactName,
-        metadata.contactNumber
-      );
+      if (text.trim()) await sendText(inst, phone, text);
+      return sendContact(inst, phone, metadata.contactName, metadata.contactNumber);
     }
 
     case "location": {
       if (!metadata.latitude || !metadata.longitude) {
-        return sendTextMessage(instanceName, number, text);
+        return sendText(inst, phone, text);
       }
-      if (text.trim()) {
-        await sendTextMessage(instanceName, number, text);
-      }
+      if (text.trim()) await sendText(inst, phone, text);
       return sendLocation(
-        instanceName,
-        number,
+        inst,
+        phone,
         parseFloat(metadata.latitude),
         parseFloat(metadata.longitude),
         metadata.locationName,
@@ -190,7 +140,7 @@ export async function sendTemplateMessage(
       );
     }
 
-    default: // "text"
-      return sendTextMessage(instanceName, number, text);
+    default: // "text" / "Texto"
+      return sendText(inst, phone, text);
   }
 }

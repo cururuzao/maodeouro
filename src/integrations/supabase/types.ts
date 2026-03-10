@@ -27,6 +27,7 @@ export type Database = {
           template_id: string | null
           total: number
           user_id: string | null
+          z_api_instance_id: string | null
         }
         Insert: {
           failed?: number
@@ -40,6 +41,7 @@ export type Database = {
           template_id?: string | null
           total?: number
           user_id?: string | null
+          z_api_instance_id?: string | null
         }
         Update: {
           failed?: number
@@ -53,6 +55,7 @@ export type Database = {
           template_id?: string | null
           total?: number
           user_id?: string | null
+          z_api_instance_id?: string | null
         }
         Relationships: [
           {
@@ -67,6 +70,13 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disparos_z_api_instance_id_fkey"
+            columns: ["z_api_instance_id"]
+            isOneToOne: false
+            referencedRelation: "z_api_instances"
             referencedColumns: ["id"]
           },
         ]
@@ -208,6 +218,39 @@ export type Database = {
           name?: string
           type?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      z_api_instances: {
+        Row: {
+          client_token: string
+          created_at: string
+          id: string
+          instance_id: string
+          instance_name: string
+          instance_token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_token?: string
+          created_at?: string
+          id?: string
+          instance_id: string
+          instance_name: string
+          instance_token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_token?: string
+          created_at?: string
+          id?: string
+          instance_id?: string
+          instance_name?: string
+          instance_token?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
