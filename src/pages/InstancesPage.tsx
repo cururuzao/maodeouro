@@ -57,11 +57,20 @@ const InstancesPage = () => {
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
+    if (newIntegration === "WHATSAPP-BUSINESS" && !businessToken.trim()) {
+      toast({ title: "Token obrigatório", description: "Informe o token de acesso da Meta para usar a Cloud API.", variant: "destructive" });
+      return;
+    }
     setCreating(true);
     try {
-      await createInstance(newName.trim(), newIntegration);
+      await createInstance(
+        newName.trim(),
+        newIntegration,
+        newIntegration === "WHATSAPP-BUSINESS" ? businessToken.trim() : undefined
+      );
       toast({ title: `Instância "${newName}" criada!`, description: `Tipo: ${newIntegration === "WHATSAPP-BUSINESS" ? "Cloud API (Oficial)" : "Baileys"}` });
       setNewName("");
+      setBusinessToken("");
       setNewIntegration("WHATSAPP-BAILEYS");
       setShowCreate(false);
       loadInstances();
