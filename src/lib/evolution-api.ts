@@ -139,7 +139,6 @@ export async function createInstance(
   };
   if (integration === "WHATSAPP-BUSINESS" && token) {
     body.token = token;
-    body.number = "";
   }
   return apiCall("/instance/create", {
     method: "POST",
