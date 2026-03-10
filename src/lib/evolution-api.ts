@@ -124,7 +124,8 @@ export async function fetchInstances(): Promise<Instance[]> {
 export async function createInstance(
   instanceName: string,
   integration: "WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS" = "WHATSAPP-BAILEYS",
-  token?: string
+  token?: string,
+  number?: string
 ): Promise<any> {
   const body: Record<string, any> = {
     instanceName,
@@ -139,7 +140,7 @@ export async function createInstance(
   };
   if (integration === "WHATSAPP-BUSINESS" && token) {
     body.token = token;
-    body.number = "";
+    if (number) body.number = number;
   }
   return apiCall("/instance/create", {
     method: "POST",

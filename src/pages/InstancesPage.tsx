@@ -37,6 +37,7 @@ const InstancesPage = () => {
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [businessToken, setBusinessToken] = useState("");
+  const [businessNumber, setBusinessNumber] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [connectingInstance, setConnectingInstance] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
@@ -70,16 +71,22 @@ const InstancesPage = () => {
       toast({ title: "Token obrigatório", description: "Informe o token de acesso da Meta para usar a Cloud API.", variant: "destructive" });
       return;
     }
+    if (newIntegration === "WHATSAPP-BUSINESS" && !businessNumber.trim()) {
+      toast({ title: "Número obrigatório", description: "Informe o número do WhatsApp Business.", variant: "destructive" });
+      return;
+    }
     setCreating(true);
     try {
       await createInstance(
         newName.trim(),
         newIntegration,
-        newIntegration === "WHATSAPP-BUSINESS" ? businessToken.trim() : undefined
+        newIntegration === "WHATSAPP-BUSINESS" ? businessToken.trim() : undefined,
+        newIntegration === "WHATSAPP-BUSINESS" ? businessNumber.trim() : undefined
       );
       toast({ title: `Instância "${newName}" criada!`, description: `Tipo: ${newIntegration === "WHATSAPP-BUSINESS" ? "Cloud API (Oficial)" : "Baileys"}` });
       setNewName("");
       setBusinessToken("");
+      setBusinessNumber("");
       setNewIntegration("WHATSAPP-BAILEYS");
       setShowCreate(false);
       loadInstances();
@@ -180,23 +187,37 @@ const InstancesPage = () => {
             </div>
           </div>
           {newIntegration === "WHATSAPP-BUSINESS" && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground font-medium">Token de acesso da Meta</p>
-              <Input
-                value={businessToken}
-                onChange={(e) => setBusinessToken(e.target.value)}
-                placeholder="Cole aqui o token permanente do WhatsApp Business"
-                className="h-10 bg-secondary border-border font-mono text-xs"
-                type="password"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Obtenha em{" "}
-                <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                  Meta Business → Usuários do sistema
-                </a>
-                {" "}→ Gerar token com permissão <code className="bg-secondary px-1 rounded text-[10px]">whatsapp_business_messaging</code>
-              </p>
-            </div>
+            <>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Token de acesso da Meta</p>
+                <Input
+                  value={businessToken}
+                  onChange={(e) => setBusinessToken(e.target.value)}
+                  placeholder="Cole aqui o token permanente do WhatsApp Business"
+                  className="h-10 bg-secondary border-border font-mono text-xs"
+                  type="password"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Obtenha em{" "}
+                  <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                    Meta Business → Usuários do sistema
+                  </a>
+                  {" "}→ Gerar token com permissão <code className="bg-secondary px-1 rounded text-[10px]">whatsapp_business_messaging</code>
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Número do WhatsApp Business</p>
+                <Input
+                  value={businessNumber}
+                  onChange={(e) => setBusinessNumber(e.target.value)}
+                  placeholder="5511999999999"
+                  className="h-10 bg-secondary border-border"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Número com código do país, sem espaços ou caracteres especiais
+                </p>
+              </div>
+            </>
           )}
           <div className="flex gap-3">
             <Button onClick={handleCreate} disabled={creating} size="sm" className="h-10 px-5">
