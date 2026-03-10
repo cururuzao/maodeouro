@@ -145,7 +145,7 @@ const TemplatesPage = () => {
   const previewContent = useMemo(() => {
     let text = content;
     VARIABLES.forEach((v) => {
-      text = text.replaceAll(v.tag, v.sample);
+      text = text.split(v.tag).join(v.sample);
     });
     return text;
   }, [content]);
