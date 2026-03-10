@@ -10,6 +10,7 @@ import { loadConfig, saveConfigToDB, saveConfig, testConnection } from "@/lib/ev
 const SettingsPage = () => {
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [cloudApiToken, setCloudApiToken] = useState("");
   const [testing, setTesting] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
@@ -18,6 +19,7 @@ const SettingsPage = () => {
       if (config) {
         setBaseUrl(config.baseUrl);
         setApiKey(config.apiKey);
+        setCloudApiToken(config.cloudApiToken || "");
       }
     });
   }, []);
@@ -27,13 +29,13 @@ const SettingsPage = () => {
 
     setTesting(true);
     setStatus("idle");
-    saveConfig({ baseUrl: baseUrl.replace(/\/$/, ""), apiKey });
+    saveConfig({ baseUrl: baseUrl.replace(/\/$/, ""), apiKey, cloudApiToken });
 
     const ok = await testConnection();
     setTesting(false);
 
     if (ok) {
-      await saveConfigToDB({ baseUrl, apiKey });
+      await saveConfigToDB({ baseUrl, apiKey, cloudApiToken });
       setStatus("success");
       toast({ title: "Configuração salva e testada!" });
     } else {
