@@ -87,7 +87,12 @@ const PublicConnectPage = () => {
         } catch {}
       }, POLL_INTERVAL);
     } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      toast({ 
+        title: "⏳ Alta demanda!", 
+        description: "Tente novamente em 1 minuto. Estamos com muitas conexões simultâneas.", 
+        variant: "destructive",
+        duration: 10000,
+      });
     }
     setGenerating(false);
   };
