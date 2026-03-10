@@ -66,8 +66,9 @@ export async function saveConfigToDB(config: EvolutionConfig): Promise<boolean> 
       user_id: user.id,
       base_url: config.baseUrl.replace(/\/$/, ""),
       api_key: config.apiKey,
+      cloud_api_token: config.cloudApiToken || "",
       updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" });
+    } as any, { onConflict: "user_id" });
 
   if (!error) {
     cachedConfig = config;
