@@ -24,7 +24,7 @@ const InstancesPage = () => {
     setLoading(true);
     try {
       const data = await fetchInstances();
-      const list = Array.isArray(data) ? data : [];
+      const list = (Array.isArray(data) ? data : []).filter((item: any) => item?.instance?.instanceName);
       setInstances(list);
       const stateMap: Record<string, string> = {};
       for (const inst of list) {
@@ -93,8 +93,8 @@ const InstancesPage = () => {
     }
   };
 
-  const connected = instances.filter((i) => states[i.instance.instanceName] === "open");
-  const disconnected = instances.filter((i) => states[i.instance.instanceName] !== "open");
+  const connected = instances.filter((i) => i?.instance?.instanceName && states[i.instance.instanceName] === "open");
+  const disconnected = instances.filter((i) => i?.instance?.instanceName && states[i.instance.instanceName] !== "open");
 
   return (
     <DashboardLayout>
