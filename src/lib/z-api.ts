@@ -74,36 +74,39 @@ export async function removeInstance(id: string): Promise<void> {
 
 // ---------- Z-API HTTP helpers ----------
 
-function buildUrl(inst: ZApiInstance, endpoint: string): string {
-  return `${Z_API_BASE}/instances/${inst.instance_id}/token/${inst.instance_token}/${endpoint}`;
-}
+async function proxyCall(inst: ZApiInstance, endpoint: string, method = "GET", payload?: any): Promise<any> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Não autenticado");
 
-function headers(inst: ZApiInstance): Record<string, string> {
-  const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (inst.client_token) h["Client-Token"] = inst.client_token;
-  return h;
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/z-api-proxy`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      instance_id: inst.instance_id,
+      instance_token: inst.instance_token,
+      client_token: inst.client_token,
+      endpoint,
+      method,
+      payload,
+    }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.error || `Erro ${res.status}`);
+  }
+  return data;
 }
 
 async function apiGet(inst: ZApiInstance, endpoint: string): Promise<any> {
-  const res = await fetch(buildUrl(inst, endpoint), { headers: headers(inst) });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Erro ${res.status}: ${text}`);
-  }
-  return res.json();
+  return proxyCall(inst, endpoint, "GET");
 }
 
 async function apiPost(inst: ZApiInstance, endpoint: string, body: any): Promise<any> {
-  const res = await fetch(buildUrl(inst, endpoint), {
-    method: "POST",
-    headers: headers(inst),
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Erro ${res.status}: ${text}`);
-  }
-  return res.json();
+  return proxyCall(inst, endpoint, "POST", body);
 }
 
 // ---------- Instance status / connection ----------
