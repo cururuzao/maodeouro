@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchInstances, type Instance } from "@/lib/evolution-api";
+import { listInstances, type ZApiInstance } from "@/lib/z-api";
 import { sendTemplateMessage, replaceVariables } from "@/lib/send-template-message";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -35,18 +35,19 @@ interface Disparo {
   failed: number;
   started_at: string;
   finished_at: string | null;
+  z_api_instance_id: string | null;
 }
 
 const DisparosPage = () => {
   const { user } = useAuth();
-  const [instances, setInstances] = useState<{ name: string }[]>([]);
+  const [instances, setInstances] = useState<ZApiInstance[]>([]);
   const [lists, setLists] = useState<LeadList[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [disparos, setDisparos] = useState<Disparo[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form
-  const [selectedInstance, setSelectedInstance] = useState("");
+  const [selectedInstanceId, setSelectedInstanceId] = useState("");
   const [selectedList, setSelectedList] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [delay, setDelay] = useState("3");
@@ -63,19 +64,15 @@ const DisparosPage = () => {
 
   const loadData = async () => {
     setLoading(true);
-    const [instancesRes, listsRes, templatesRes, disparosRes] = await Promise.all([
-      fetchInstances().catch(() => []),
+    const [instList, listsRes, templatesRes, disparosRes] = await Promise.all([
+      listInstances().catch(() => []),
       supabase.from("lead_lists").select("id, name").order("created_at", { ascending: false }),
       supabase.from("templates").select("id, name, type, content, metadata").order("created_at", { ascending: false }),
       supabase.from("disparos").select("*").order("started_at", { ascending: false }).limit(50),
     ]);
 
-    const instList = (Array.isArray(instancesRes) ? instancesRes : []).map((item: any) => {
-      const name = item?.instance?.instanceName || item?.name || "unknown";
-      return { name };
-    });
     setInstances(instList);
-    if (instList.length > 0) setSelectedInstance(instList[0].name);
+    if (instList.length > 0) setSelectedInstanceId(instList[0].id);
 
     setLists(listsRes.data || []);
     setTemplates((templatesRes.data || []).map((t: any) => ({ ...t, metadata: t.metadata || {} })));
@@ -84,7 +81,8 @@ const DisparosPage = () => {
   };
 
   const startDisparo = async () => {
-    if (!selectedInstance || !selectedList || !selectedTemplate) {
+    const inst = instances.find((i) => i.id === selectedInstanceId);
+    if (!inst || !selectedList || !selectedTemplate) {
       toast({ title: "Selecione instância, lista e template", variant: "destructive" });
       return;
     }
@@ -92,7 +90,6 @@ const DisparosPage = () => {
     const template = templates.find((t) => t.id === selectedTemplate);
     if (!template) return;
 
-    // Fetch leads for the list
     const { data: leads, error } = await supabase
       .from("leads")
       .select("phone, name, extra_data")
@@ -103,11 +100,10 @@ const DisparosPage = () => {
       return;
     }
 
-    // Create disparo record
     const { data: disparo, error: dErr } = await supabase
       .from("disparos")
       .insert({
-        instance_name: selectedInstance,
+        instance_name: inst.instance_name,
         template_id: selectedTemplate,
         list_id: selectedList,
         status: "running",
@@ -115,7 +111,8 @@ const DisparosPage = () => {
         sent: 0,
         failed: 0,
         user_id: user?.id,
-      })
+        z_api_instance_id: inst.id,
+      } as any)
       .select()
       .single();
 
@@ -139,7 +136,7 @@ const DisparosPage = () => {
       const text = replaceVariables(template.content, lead as any);
 
       try {
-        await sendTemplateMessage(selectedInstance, lead.phone, text, template.type, template.metadata || {});
+        await sendTemplateMessage(inst, lead.phone, text, template.type, template.metadata || {});
         sent++;
       } catch {
         failed++;
@@ -147,12 +144,8 @@ const DisparosPage = () => {
 
       setProgress({ sent, failed, total: leads.length });
 
-      // Update DB periodically (every 5 messages)
       if ((sent + failed) % 5 === 0 || sent + failed === leads.length) {
-        await supabase
-          .from("disparos")
-          .update({ sent, failed })
-          .eq("id", disparo.id);
+        await supabase.from("disparos").update({ sent, failed }).eq("id", disparo.id);
       }
 
       if (sent + failed < leads.length && !abortRef.current && delayMs > 0) {
@@ -160,7 +153,6 @@ const DisparosPage = () => {
       }
     }
 
-    // Finalize
     const finalStatus = abortRef.current ? "cancelled" : "completed";
     await supabase
       .from("disparos")
@@ -232,10 +224,10 @@ const DisparosPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Instância</Label>
-              <select value={selectedInstance} onChange={(e) => setSelectedInstance(e.target.value)} className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground">
+              <select value={selectedInstanceId} onChange={(e) => setSelectedInstanceId(e.target.value)} className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground">
                 {instances.length === 0 && <option value="">Nenhuma instância</option>}
-                {instances.map((inst: any) => (
-                  <option key={inst.name} value={inst.name}>{inst.name}</option>
+                {instances.map((inst) => (
+                  <option key={inst.id} value={inst.id}>{inst.instance_name}</option>
                 ))}
               </select>
             </div>
@@ -270,7 +262,6 @@ const DisparosPage = () => {
             )}
           </div>
 
-          {/* Progress */}
           {running && (
             <div className="space-y-2 pt-2">
               <div className="flex justify-between text-xs text-muted-foreground">

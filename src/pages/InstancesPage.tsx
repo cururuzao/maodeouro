@@ -1,53 +1,49 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  Plus, RefreshCw, Trash2, WifiOff, Loader2, X, Link2, User, Phone, Monitor,
+  Plus, RefreshCw, Trash2, Loader2, X, Wifi, WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
-  fetchInstances, createInstance, deleteInstance, connectInstance,
-  logoutInstance, loadConfig,
-} from "@/lib/evolution-api";
+  listInstances, addInstance, removeInstance, getStatus,
+  disconnect, type ZApiInstance, type ZApiStatus,
+} from "@/lib/z-api";
 
-interface NormalizedInstance {
-  name: string;
-  owner: string;
-  connectionStatus: string;
-}
-
-function normalizeInstances(data: any[]): NormalizedInstance[] {
-  return data
-    .map((item: any) => {
-      const name = item?.instance?.instanceName || item?.name;
-      if (!name) return null;
-      const status = item?.instance?.status || item?.connectionStatus || "close";
-      const owner = item?.instance?.owner || item?.ownerJid || "";
-      return { name, owner, connectionStatus: status };
-    })
-    .filter(Boolean) as NormalizedInstance[];
+interface InstanceWithStatus extends ZApiInstance {
+  status?: ZApiStatus;
 }
 
 const InstancesPage = () => {
-  const [instances, setInstances] = useState<NormalizedInstance[]>([]);
+  const [instances, setInstances] = useState<InstanceWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newName, setNewName] = useState("");
-  const [newIntegration, setNewIntegration] = useState<"WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS">("WHATSAPP-BAILEYS");
-  const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [businessToken, setBusinessToken] = useState("");
-  const [businessNumber, setBusinessNumber] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [connectingInstance, setConnectingInstance] = useState<string | null>(null);
-  const [pairingCode, setPairingCode] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  // Form fields
+  const [newName, setNewName] = useState("");
+  const [newInstanceId, setNewInstanceId] = useState("");
+  const [newToken, setNewToken] = useState("");
+  const [newClientToken, setNewClientToken] = useState("");
 
   const loadInstances = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchInstances();
-      const list = normalizeInstances(Array.isArray(data) ? data : []);
-      setInstances(list);
+      const list = await listInstances();
+      // Check status for each instance
+      const withStatus = await Promise.all(
+        list.map(async (inst) => {
+          try {
+            const status = await getStatus(inst);
+            return { ...inst, status };
+          } catch {
+            return { ...inst, status: undefined };
+          }
+        })
+      );
+      setInstances(withStatus);
     } catch (err: any) {
       toast({ title: "Erro ao carregar instâncias", description: err.message, variant: "destructive" });
     }
@@ -56,97 +52,63 @@ const InstancesPage = () => {
 
   useEffect(() => { loadInstances(); }, [loadInstances]);
 
-  // Pre-fill Cloud API token from saved config
-  useEffect(() => {
-    loadConfig().then((config) => {
-      if (config?.cloudApiToken) {
-        setBusinessToken(config.cloudApiToken);
-      }
-    });
-  }, []);
-
   const handleCreate = async () => {
-    if (!newName.trim()) return;
-    if (newIntegration === "WHATSAPP-BUSINESS" && !businessToken.trim()) {
-      toast({ title: "Token obrigatório", description: "Informe o token de acesso da Meta para usar a Cloud API.", variant: "destructive" });
-      return;
-    }
-    if (newIntegration === "WHATSAPP-BUSINESS" && !businessNumber.trim()) {
-      toast({ title: "Número obrigatório", description: "Informe o número do WhatsApp Business.", variant: "destructive" });
+    if (!newName.trim() || !newInstanceId.trim() || !newToken.trim()) {
+      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
     setCreating(true);
     try {
-      await createInstance(
-        newName.trim(),
-        newIntegration,
-        newIntegration === "WHATSAPP-BUSINESS" ? businessToken.trim() : undefined,
-        newIntegration === "WHATSAPP-BUSINESS" ? businessNumber.trim() : undefined
-      );
-      toast({ title: `Instância "${newName}" criada!`, description: `Tipo: ${newIntegration === "WHATSAPP-BUSINESS" ? "Cloud API (Oficial)" : "Baileys"}` });
+      await addInstance({
+        instance_name: newName.trim(),
+        instance_id: newInstanceId.trim(),
+        instance_token: newToken.trim(),
+        client_token: newClientToken.trim(),
+      });
+      toast({ title: `Instância "${newName}" adicionada!` });
       setNewName("");
-      setBusinessToken("");
-      setBusinessNumber("");
-      setNewIntegration("WHATSAPP-BAILEYS");
+      setNewInstanceId("");
+      setNewToken("");
+      setNewClientToken("");
       setShowCreate(false);
       loadInstances();
     } catch (err: any) {
-      toast({ title: "Erro ao criar", description: err.message, variant: "destructive" });
+      toast({ title: "Erro ao adicionar", description: err.message, variant: "destructive" });
     }
     setCreating(false);
   };
 
-  const handleDelete = async (name: string) => {
-    if (!confirm(`Deletar instância "${name}"?`)) return;
+  const handleDelete = async (inst: InstanceWithStatus) => {
+    if (!confirm(`Remover instância "${inst.instance_name}"?`)) return;
     try {
-      await deleteInstance(name);
-      toast({ title: `Instância "${name}" removida` });
+      await removeInstance(inst.id);
+      toast({ title: `"${inst.instance_name}" removida` });
       loadInstances();
     } catch (err: any) {
-      toast({ title: "Erro ao deletar", description: err.message, variant: "destructive" });
+      toast({ title: "Erro ao remover", description: err.message, variant: "destructive" });
     }
   };
 
-  const handleConnect = (name: string) => {
-    setConnectingInstance(name);
-    setPhoneNumber("");
-    setPairingCode(null);
-  };
-
-  const handlePairWithPhone = async () => {
-    if (!connectingInstance || !phoneNumber.trim()) return;
+  const handleDisconnect = async (inst: InstanceWithStatus) => {
     try {
-      const result = await connectInstance(connectingInstance, phoneNumber.trim());
-      if (result?.pairingCode) {
-        setPairingCode(result.pairingCode);
-      } else {
-        toast({ title: "Código não disponível", description: "Tente novamente", variant: "destructive" });
-      }
-    } catch (err: any) {
-      toast({ title: "Erro ao conectar", description: err.message, variant: "destructive" });
-    }
-  };
-
-  const handleLogout = async (name: string) => {
-    try {
-      await logoutInstance(name);
-      toast({ title: `"${name}" desconectada` });
+      await disconnect(inst);
+      toast({ title: `"${inst.instance_name}" desconectada` });
       loadInstances();
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     }
   };
 
-  const connected = instances.filter((i) => i.connectionStatus === "open");
-  const disconnected = instances.filter((i) => i.connectionStatus !== "open");
+  const connected = instances.filter((i) => i.status?.connected);
+  const disconnected = instances.filter((i) => !i.status?.connected);
 
   return (
     <DashboardLayout>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Instâncias</h1>
-          <p className="text-sm text-muted-foreground">Gerencie suas conexões WhatsApp</p>
+          <h1 className="text-2xl font-bold text-foreground">Instâncias Z-API</h1>
+          <p className="text-sm text-muted-foreground">Gerencie suas conexões WhatsApp via Z-API</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={loadInstances} disabled={loading}>
@@ -155,111 +117,50 @@ const InstancesPage = () => {
           </Button>
           <Button size="sm" onClick={() => setShowCreate(true)} className="bg-primary text-primary-foreground">
             <Plus className="w-4 h-4 mr-2" />
-            Nova Instância
+            Adicionar Instância
           </Button>
         </div>
       </div>
 
-      {/* Create modal */}
+      {/* Create form */}
       {showCreate && (
-        <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Criar instância</h3>
-          <div className="flex gap-3">
-            <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome da instância" className="h-10 bg-secondary border-border" onKeyDown={(e) => e.key === "Enter" && handleCreate()} />
+        <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Adicionar instância Z-API</h3>
+            <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground font-medium">Tipo de conexão</p>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setNewIntegration("WHATSAPP-BAILEYS")}
-                className={`rounded-lg border p-3 text-left transition-all ${newIntegration === "WHATSAPP-BAILEYS" ? "border-primary bg-primary/10" : "border-border bg-secondary hover:border-muted-foreground/30"}`}
-              >
-                <p className="text-sm font-semibold text-foreground">Baileys</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Conexão via QR Code / código de pareamento. Gratuito, sem custos da Meta.</p>
-              </button>
-              <button
-                onClick={() => setNewIntegration("WHATSAPP-BUSINESS")}
-                className={`rounded-lg border p-3 text-left transition-all ${newIntegration === "WHATSAPP-BUSINESS" ? "border-primary bg-primary/10" : "border-border bg-secondary hover:border-muted-foreground/30"}`}
-              >
-                <p className="text-sm font-semibold text-foreground">Cloud API (Oficial)</p>
-                <p className="text-xs text-muted-foreground mt-0.5">API oficial da Meta. Suporte a botões com link, templates aprovados.</p>
-              </button>
+          <p className="text-xs text-muted-foreground">
+            Obtenha os dados em{" "}
+            <a href="https://app.z-api.io" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+              app.z-api.io
+            </a>{" "}
+            → selecione sua instância → copie Instance ID, Token e Client-Token.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Nome (apelido)</Label>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Minha instância" className="h-10 bg-secondary border-border" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Instance ID *</Label>
+              <Input value={newInstanceId} onChange={(e) => setNewInstanceId(e.target.value)} placeholder="3C2A7..." className="h-10 bg-secondary border-border font-mono text-xs" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Token *</Label>
+              <Input value={newToken} onChange={(e) => setNewToken(e.target.value)} placeholder="Token da instância" className="h-10 bg-secondary border-border font-mono text-xs" type="password" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">Client-Token (segurança)</Label>
+              <Input value={newClientToken} onChange={(e) => setNewClientToken(e.target.value)} placeholder="Token de segurança da conta" className="h-10 bg-secondary border-border font-mono text-xs" type="password" />
             </div>
           </div>
-          {newIntegration === "WHATSAPP-BUSINESS" && (
-            <>
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">Token de acesso da Meta</p>
-                <Input
-                  value={businessToken}
-                  onChange={(e) => setBusinessToken(e.target.value)}
-                  placeholder="Cole aqui o token permanente do WhatsApp Business"
-                  className="h-10 bg-secondary border-border font-mono text-xs"
-                  type="password"
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Obtenha em{" "}
-                  <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                    Meta Business → Usuários do sistema
-                  </a>
-                  {" "}→ Gerar token com permissão <code className="bg-secondary px-1 rounded text-[10px]">whatsapp_business_messaging</code>
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground font-medium">Número do WhatsApp Business</p>
-                <Input
-                  value={businessNumber}
-                  onChange={(e) => setBusinessNumber(e.target.value)}
-                  placeholder="5511999999999"
-                  className="h-10 bg-secondary border-border"
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Número com código do país, sem espaços ou caracteres especiais
-                </p>
-              </div>
-            </>
-          )}
           <div className="flex gap-3">
             <Button onClick={handleCreate} disabled={creating} size="sm" className="h-10 px-5">
-              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar"}
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Adicionar"}
             </Button>
             <Button variant="ghost" size="sm" className="h-10" onClick={() => setShowCreate(false)}>Cancelar</Button>
-          </div>
-        </div>
-      )}
-
-      {/* Pairing Code modal */}
-      {connectingInstance && (
-        <div className="fixed inset-0 z-50 bg-background/80 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-xl p-6 max-w-sm w-full relative">
-            <button onClick={() => { setConnectingInstance(null); setPairingCode(null); }} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
-            <h3 className="text-lg font-bold text-foreground text-center mb-1">Conectar "{connectingInstance}"</h3>
-            
-            {!pairingCode ? (
-              <>
-                <p className="text-sm text-muted-foreground text-center mb-4">Digite seu número de telefone com código do país</p>
-                <Input
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="5511999999999"
-                  className="h-10 bg-secondary border-border mb-3"
-                  onKeyDown={(e) => e.key === "Enter" && handlePairWithPhone()}
-                />
-                <Button onClick={handlePairWithPhone} className="w-full h-11">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Gerar código de pareamento
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground text-center mb-2">Digite este código no seu WhatsApp:</p>
-                <p className="text-sm text-muted-foreground text-center mb-4">Configurações → Aparelhos conectados → Conectar com número</p>
-                <div className="bg-secondary rounded-lg p-4 text-center mb-4">
-                  <p className="font-mono text-2xl font-bold text-foreground tracking-widest">{pairingCode}</p>
-                </div>
-                <Button variant="outline" className="w-full" onClick={() => { setConnectingInstance(null); setPairingCode(null); loadInstances(); }}>Fechar</Button>
-              </>
-            )}
           </div>
         </div>
       )}
@@ -268,42 +169,37 @@ const InstancesPage = () => {
         <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
       ) : instances.length === 0 ? (
         <div className="text-center py-20">
-          <Monitor className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground">Nenhuma instância encontrada</p>
-          <Button size="sm" className="mt-4" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-2" />Criar primeira instância</Button>
+          <Wifi className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">Nenhuma instância adicionada</p>
+          <Button size="sm" className="mt-4" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4 mr-2" />Adicionar primeira instância</Button>
         </div>
       ) : (
         <div className="space-y-6">
           {connected.length > 0 && (
             <div>
               <h2 className="text-base font-semibold text-primary mb-3 flex items-center gap-2">
-                <span className="text-primary">▲</span> Conectadas ({connected.length})
+                <Wifi className="w-4 h-4" /> Conectadas ({connected.length})
               </h2>
               <div className="space-y-3">
                 {connected.map((inst) => (
-                  <div key={inst.name} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
+                  <div key={inst.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                        <User className="w-5 h-5 text-muted-foreground" />
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Wifi className="w-5 h-5 text-primary" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground text-sm">{inst.name}</span>
+                          <span className="font-semibold text-foreground text-sm">{inst.instance_name}</span>
                           <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Conectado</span>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                          <span className="flex items-center gap-1"><User className="w-3 h-3" />{inst.owner || "—"}</span>
-                        </div>
+                        <span className="text-xs text-muted-foreground font-mono">{inst.instance_id}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" className="bg-primary text-primary-foreground text-xs" disabled>
-                        ⚡ Disparando
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => handleLogout(inst.name)}>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => handleDisconnect(inst)}>
                         <WifiOff className="w-3.5 h-3.5 mr-1.5" />Desconectar
                       </Button>
-                      <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => handleDelete(inst.name)}>
+                      <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => handleDelete(inst)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -316,27 +212,25 @@ const InstancesPage = () => {
           {disconnected.length > 0 && (
             <div>
               <h2 className="text-base font-semibold text-destructive mb-3 flex items-center gap-2">
-                <span className="text-destructive">▼</span> Desconectadas ({disconnected.length})
+                <WifiOff className="w-4 h-4" /> Desconectadas ({disconnected.length})
               </h2>
               <div className="space-y-3">
                 {disconnected.map((inst) => (
-                  <div key={inst.name} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
+                  <div key={inst.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
-                        <User className="w-5 h-5 text-muted-foreground" />
+                        <WifiOff className="w-5 h-5 text-muted-foreground" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-foreground text-sm">{inst.name}</span>
+                          <span className="font-semibold text-foreground text-sm">{inst.instance_name}</span>
                           <span className="text-xs bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">Desconectado</span>
                         </div>
+                        <span className="text-xs text-muted-foreground font-mono">{inst.instance_id}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => handleConnect(inst.name)}>
-                        <Link2 className="w-3.5 h-3.5 mr-1.5" />Conectar
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => handleDelete(inst.name)}>
+                      <Button size="sm" variant="ghost" className="text-xs text-destructive" onClick={() => handleDelete(inst)}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
