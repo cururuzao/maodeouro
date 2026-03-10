@@ -237,6 +237,36 @@ const DisparosPage = () => {
     abortRef.current = true;
   };
 
+  const sendTestMessage = async () => {
+    const inst = instances.find((i) => i.id === selectedInstanceId);
+    if (!inst) {
+      toast({ title: "Selecione uma instância", variant: "destructive" });
+      return;
+    }
+    if (!selectedTemplate) {
+      toast({ title: "Selecione um template", variant: "destructive" });
+      return;
+    }
+    const phone = testPhone.replace(/\D/g, "");
+    if (!phone || phone.length < 10) {
+      toast({ title: "Digite um número válido", variant: "destructive" });
+      return;
+    }
+    const template = templates.find((t) => t.id === selectedTemplate);
+    if (!template) return;
+
+    setSendingTest(true);
+    try {
+      const text = replaceVariables(template.content, { name: "Teste", phone });
+      await sendTemplateMessage(inst, phone, text, template.type, template.metadata || {});
+      toast({ title: "✅ Mensagem de teste enviada!", description: `Enviada para ${phone}` });
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar teste", description: err.message, variant: "destructive" });
+    } finally {
+      setSendingTest(false);
+    }
+  };
+
   const getListName = (id: string | null) => lists.find((l) => l.id === id)?.name || "-";
   const getTemplateName = (id: string | null) => templates.find((t) => t.id === id)?.name || "-";
 
