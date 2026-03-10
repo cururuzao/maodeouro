@@ -140,8 +140,9 @@ export async function getConnectionState(instanceName: string): Promise<Connecti
   return apiCall(`/instance/connectionState/${instanceName}`);
 }
 
-export async function connectInstance(instanceName: string): Promise<QRCodeResponse> {
-  return apiCall(`/instance/connect/${instanceName}`);
+export async function connectInstance(instanceName: string, number?: string): Promise<QRCodeResponse> {
+  const params = number ? `?number=${number}` : "";
+  return apiCall(`/instance/connect/${instanceName}${params}`);
 }
 
 export async function logoutInstance(instanceName: string): Promise<any> {
