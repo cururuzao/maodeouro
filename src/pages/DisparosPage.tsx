@@ -130,8 +130,15 @@ const DisparosPage = () => {
     for (const lead of leads) {
       if (abortRef.current) break;
 
-      // Replace {{nome}} placeholder
-      const text = template.content.replace(/\{\{nome\}\}/gi, lead.name || "");
+      // Replace all dynamic variables
+      const extra = (lead as any).extra_data || {};
+      let text = template.content
+        .replace(/\{\{nome\}\}/gi, lead.name || "")
+        .replace(/\{\{telefone\}\}/gi, lead.phone || "")
+        .replace(/\{\{email\}\}/gi, extra.email || "")
+        .replace(/\{\{empresa\}\}/gi, extra.empresa || "")
+        .replace(/\{\{data\}\}/gi, new Date().toLocaleDateString("pt-BR"))
+        .replace(/\{\{hora\}\}/gi, new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
 
       try {
         await sendTextMessage(selectedInstance, lead.phone, text);
