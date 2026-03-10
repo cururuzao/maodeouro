@@ -6,16 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
-import {
-  fetchInstances,
-  sendTextMessage,
-  sendBulkMessages,
-  type Instance,
-} from "@/lib/evolution-api";
+import { listInstances, sendText, type ZApiInstance } from "@/lib/z-api";
 
 const Messages = () => {
-  const [instances, setInstances] = useState<Instance[]>([]);
-  const [selectedInstance, setSelectedInstance] = useState("");
+  const [instances, setInstances] = useState<ZApiInstance[]>([]);
+  const [selectedId, setSelectedId] = useState("");
   const [mode, setMode] = useState<"single" | "bulk">("single");
   const [number, setNumber] = useState("");
   const [bulkNumbers, setBulkNumbers] = useState("");
@@ -24,20 +19,22 @@ const Messages = () => {
   const [delay, setDelay] = useState("3");
 
   useEffect(() => {
-    fetchInstances()
+    listInstances()
       .then((data) => {
-        const list = Array.isArray(data) ? data : [];
-        setInstances(list);
-        if (list.length > 0) setSelectedInstance(list[0].instance.instanceName);
+        setInstances(data);
+        if (data.length > 0) setSelectedId(data[0].id);
       })
       .catch(() => {});
   }, []);
 
+  const getSelectedInst = () => instances.find((i) => i.id === selectedId);
+
   const handleSendSingle = async () => {
-    if (!selectedInstance || !number || !message) return;
+    const inst = getSelectedInst();
+    if (!inst || !number || !message) return;
     setSending(true);
     try {
-      await sendTextMessage(selectedInstance, number, message);
+      await sendText(inst, number, message);
       toast({ title: "Mensagem enviada!" });
       setNumber("");
       setMessage("");
@@ -48,7 +45,8 @@ const Messages = () => {
   };
 
   const handleSendBulk = async () => {
-    if (!selectedInstance || !bulkNumbers || !message) return;
+    const inst = getSelectedInst();
+    if (!inst || !bulkNumbers || !message) return;
     const numbers = bulkNumbers
       .split(/[\n,;]+/)
       .map((n) => n.trim())
@@ -57,22 +55,28 @@ const Messages = () => {
     if (numbers.length === 0) return;
 
     setSending(true);
-    try {
-      const result = await sendBulkMessages(
-        selectedInstance,
-        numbers,
-        message,
-        Number(delay) * 1000
-      );
-      toast({
-        title: `Disparo concluído`,
-        description: `${result.sent.length} enviados, ${result.failed.length} falharam`,
-      });
-      setBulkNumbers("");
-      setMessage("");
-    } catch (err: any) {
-      toast({ title: "Erro no disparo", description: err.message, variant: "destructive" });
+    let sent = 0;
+    let failed = 0;
+    const delayMs = Number(delay) * 1000;
+
+    for (const num of numbers) {
+      try {
+        await sendText(inst, num, message);
+        sent++;
+      } catch {
+        failed++;
+      }
+      if (delayMs > 0 && sent + failed < numbers.length) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
     }
+
+    toast({
+      title: "Disparo concluído",
+      description: `${sent} enviados, ${failed} falharam`,
+    });
+    setBulkNumbers("");
+    setMessage("");
     setSending(false);
   };
 
@@ -84,26 +88,22 @@ const Messages = () => {
           Envie mensagens individuais ou em massa
         </p>
 
-        {/* Instance selector */}
         <div className="space-y-2 mb-6">
           <Label className="text-sm text-muted-foreground">Instância</Label>
           <select
-            value={selectedInstance}
-            onChange={(e) => setSelectedInstance(e.target.value)}
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
             className="w-full h-10 rounded-lg bg-secondary border border-border px-3 text-sm text-foreground"
           >
-            {instances.length === 0 && (
-              <option value="">Nenhuma instância disponível</option>
-            )}
+            {instances.length === 0 && <option value="">Nenhuma instância disponível</option>}
             {instances.map((inst) => (
-              <option key={inst.instance.instanceName} value={inst.instance.instanceName}>
-                {inst.instance.instanceName}
+              <option key={inst.id} value={inst.id}>
+                {inst.instance_name}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Mode tabs */}
         <div className="flex gap-1 bg-secondary rounded-lg p-1 mb-6">
           <button
             onClick={() => setMode("single")}
@@ -129,7 +129,6 @@ const Messages = () => {
           </button>
         </div>
 
-        {/* Form */}
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           {mode === "single" ? (
             <div className="space-y-2">
@@ -182,7 +181,7 @@ const Messages = () => {
 
           <Button
             onClick={mode === "single" ? handleSendSingle : handleSendBulk}
-            disabled={sending || !selectedInstance}
+            disabled={sending || !selectedId}
             className="w-full h-11"
           >
             {sending ? (
