@@ -24,7 +24,7 @@ const InstancesPage = () => {
     setLoading(true);
     try {
       const data = await fetchInstances();
-      const list = Array.isArray(data) ? data : [];
+      const list = (Array.isArray(data) ? data : []).filter((item: any) => item?.instance?.instanceName);
       setInstances(list);
       const stateMap: Record<string, string> = {};
       for (const inst of list) {
