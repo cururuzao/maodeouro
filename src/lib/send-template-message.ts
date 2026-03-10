@@ -70,17 +70,32 @@ export async function sendTemplateMessage(
         return sendTextMessage(instanceName, number, text);
       }
 
-      // Build buttons in the official Evolution API format
-      const apiButtons = allButtons.map((btn) => {
-        if (btn.type === "url" && btn.url) {
-          return { type: "url", displayText: btn.text, url: btn.url };
+      // Check if there are URL or call buttons — these only work on Cloud API.
+      // For Baileys instances, fall back to text with links appended.
+      const hasUrlOrCall = allButtons.some((b) => b.type === "url" || b.type === "call");
+
+      if (hasUrlOrCall) {
+        // Build a text fallback with the links/numbers appended
+        let fallbackText = text;
+        for (const btn of allButtons) {
+          if (btn.type === "url" && btn.url) {
+            fallbackText += `\n\n🔗 ${btn.text}: ${btn.url}`;
+          } else if (btn.type === "call" && btn.phoneNumber) {
+            fallbackText += `\n\n📞 ${btn.text}: ${btn.phoneNumber}`;
+          }
         }
-        if (btn.type === "call" && btn.phoneNumber) {
-          return { type: "call", displayText: btn.text, phoneNumber: btn.phoneNumber };
+        if (metadata.footer) {
+          fallbackText += `\n\n_${metadata.footer}_`;
         }
-        // reply
-        return { type: "reply", displayText: btn.text, id: btn.id };
-      });
+        return sendTextMessage(instanceName, number, fallbackText);
+      }
+
+      // Only reply buttons — try native buttons
+      const apiButtons = allButtons.map((btn) => ({
+        type: "reply",
+        displayText: btn.text,
+        id: btn.id,
+      }));
 
       // Use raw fetch to send with the correct format
       const config = await import("@/lib/evolution-api").then((m) => m.loadConfig());
