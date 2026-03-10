@@ -128,7 +128,7 @@ export async function getQrCode(inst: ZApiInstance): Promise<{ value: string }> 
 }
 
 export async function getPhoneCode(inst: ZApiInstance, phone: string): Promise<{ value: string }> {
-  return apiPost(inst, "phone-code", { phone });
+  return apiGet(inst, `phone-code/${phone}`);
 }
 
 // ---------- Messages ----------
