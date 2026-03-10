@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import SocialAuthButtons from "@/components/SocialAuthButtons";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -55,33 +56,21 @@ const LoginPage = () => {
           </p>
 
           <div className="space-y-5">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                <Zap className="w-5 h-5 text-primary" />
+            {[
+              { icon: Zap, title: "Disparos Ultrarrápidos", desc: "Envie milhares de mensagens em minutos" },
+              { icon: Shield, title: "100% Seguro", desc: "Seus dados protegidos com criptografia" },
+              { icon: Users, title: "Gestão de Leads", desc: "Organize e segmente seus contatos" },
+            ].map((f) => (
+              <div key={f.title} className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                  <f.icon className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-foreground font-medium text-sm">{f.title}</p>
+                  <p className="text-muted-foreground text-xs">{f.desc}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-foreground font-medium text-sm">Disparos Ultrarrápidos</p>
-                <p className="text-muted-foreground text-xs">Envie milhares de mensagens em minutos</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                <Shield className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-foreground font-medium text-sm">100% Seguro</p>
-                <p className="text-muted-foreground text-xs">Seus dados protegidos com criptografia</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                <Users className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-foreground font-medium text-sm">Gestão de Leads</p>
-                <p className="text-muted-foreground text-xs">Organize e segmente seus contatos</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -89,7 +78,6 @@ const LoginPage = () => {
       {/* Right Panel - Login Form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-sm">
-          {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/15 border border-primary/30 mb-4 text-3xl">
               ✋
@@ -109,38 +97,24 @@ const LoginPage = () => {
                 <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    className="h-12 bg-secondary border-border pl-10 rounded-xl text-sm focus:border-primary focus:ring-primary"
-                    required
-                  />
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" className="h-12 bg-secondary border-border pl-10 rounded-xl text-sm" required />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Senha</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-12 bg-secondary border-border pl-10 rounded-xl text-sm focus:border-primary focus:ring-primary"
-                    required
-                  />
+                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-12 bg-secondary border-border pl-10 rounded-xl text-sm" required />
                 </div>
               </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/25 transition-all"
-              >
+              <Button type="submit" disabled={loading} className="w-full h-12 rounded-xl text-sm font-semibold shadow-md shadow-primary/25">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Entrar"}
               </Button>
             </form>
+
+            <div className="mt-5">
+              <SocialAuthButtons />
+            </div>
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
