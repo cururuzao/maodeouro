@@ -37,6 +37,7 @@ const InstancesPage = () => {
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [businessToken, setBusinessToken] = useState("");
+  const [businessNumber, setBusinessNumber] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [connectingInstance, setConnectingInstance] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
