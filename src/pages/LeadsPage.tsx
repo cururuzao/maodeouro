@@ -63,7 +63,7 @@ const LeadsPage = () => {
     // Create the list
     const { data: newList, error: listError } = await supabase
       .from("lead_lists")
-      .insert({ name: listName, description })
+      .insert({ name: listName, description, user_id: user?.id })
       .select()
       .single();
 

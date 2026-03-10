@@ -18,6 +18,7 @@ interface Template {
 }
 
 const TemplatesPage = () => {
+  const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
