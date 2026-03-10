@@ -121,15 +121,20 @@ export async function fetchInstances(): Promise<Instance[]> {
 
 export async function createInstance(
   instanceName: string,
-  integration: "WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS" = "WHATSAPP-BAILEYS"
+  integration: "WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS" = "WHATSAPP-BAILEYS",
+  token?: string
 ): Promise<any> {
+  const body: Record<string, any> = {
+    instanceName,
+    qrcode: false,
+    integration,
+  };
+  if (integration === "WHATSAPP-BUSINESS" && token) {
+    body.token = token;
+  }
   return apiCall("/instance/create", {
     method: "POST",
-    body: JSON.stringify({
-      instanceName,
-      qrcode: false,
-      integration,
-    }),
+    body: JSON.stringify(body),
   });
 }
 
