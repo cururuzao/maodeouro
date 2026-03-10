@@ -1,0 +1,1 @@
+ALTER TABLE public.evolution_configs ADD COLUMN IF NOT EXISTS cloud_api_token text DEFAULT '';

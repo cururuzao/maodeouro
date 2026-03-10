@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import {
   fetchInstances, createInstance, deleteInstance, connectInstance,
-  logoutInstance,
+  logoutInstance, loadConfig,
 } from "@/lib/evolution-api";
 
 interface NormalizedInstance {
@@ -54,6 +54,15 @@ const InstancesPage = () => {
   }, []);
 
   useEffect(() => { loadInstances(); }, [loadInstances]);
+
+  // Pre-fill Cloud API token from saved config
+  useEffect(() => {
+    loadConfig().then((config) => {
+      if (config?.cloudApiToken) {
+        setBusinessToken(config.cloudApiToken);
+      }
+    });
+  }, []);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;

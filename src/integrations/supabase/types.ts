@@ -75,6 +75,7 @@ export type Database = {
         Row: {
           api_key: string
           base_url: string
+          cloud_api_token: string | null
           created_at: string
           id: string
           updated_at: string
@@ -83,6 +84,7 @@ export type Database = {
         Insert: {
           api_key: string
           base_url: string
+          cloud_api_token?: string | null
           created_at?: string
           id?: string
           updated_at?: string
@@ -91,6 +93,7 @@ export type Database = {
         Update: {
           api_key?: string
           base_url?: string
+          cloud_api_token?: string | null
           created_at?: string
           id?: string
           updated_at?: string

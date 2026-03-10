@@ -10,6 +10,7 @@ import { loadConfig, saveConfigToDB, saveConfig, testConnection } from "@/lib/ev
 const SettingsPage = () => {
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [cloudApiToken, setCloudApiToken] = useState("");
   const [testing, setTesting] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
@@ -18,6 +19,7 @@ const SettingsPage = () => {
       if (config) {
         setBaseUrl(config.baseUrl);
         setApiKey(config.apiKey);
+        setCloudApiToken(config.cloudApiToken || "");
       }
     });
   }, []);
@@ -27,13 +29,13 @@ const SettingsPage = () => {
 
     setTesting(true);
     setStatus("idle");
-    saveConfig({ baseUrl: baseUrl.replace(/\/$/, ""), apiKey });
+    saveConfig({ baseUrl: baseUrl.replace(/\/$/, ""), apiKey, cloudApiToken });
 
     const ok = await testConnection();
     setTesting(false);
 
     if (ok) {
-      await saveConfigToDB({ baseUrl, apiKey });
+      await saveConfigToDB({ baseUrl, apiKey, cloudApiToken });
       setStatus("success");
       toast({ title: "Configuração salva e testada!" });
     } else {
@@ -70,6 +72,23 @@ const SettingsPage = () => {
               placeholder="Sua chave de API"
               className="h-10 bg-secondary border-border"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm text-muted-foreground">Token Cloud API (Meta)</Label>
+            <Input
+              type="password"
+              value={cloudApiToken}
+              onChange={(e) => setCloudApiToken(e.target.value)}
+              placeholder="Token de acesso do WhatsApp Business (opcional)"
+              className="h-10 bg-secondary border-border font-mono text-xs"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Usado ao criar instâncias Cloud API. Obtenha em{" "}
+              <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                Meta Business
+              </a>
+            </p>
           </div>
 
           <Button onClick={handleSave} disabled={testing} className="w-full h-11">

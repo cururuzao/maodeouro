@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface EvolutionConfig {
   baseUrl: string;
   apiKey: string;
+  cloudApiToken?: string;
 }
 
 export interface Instance {
@@ -44,12 +45,12 @@ export async function loadConfig(): Promise<EvolutionConfig | null> {
 
   const { data } = await supabase
     .from("evolution_configs")
-    .select("base_url, api_key")
+    .select("base_url, api_key, cloud_api_token")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (data) {
-    cachedConfig = { baseUrl: data.base_url, apiKey: data.api_key };
+    cachedConfig = { baseUrl: data.base_url, apiKey: data.api_key, cloudApiToken: (data as any).cloud_api_token || "" };
     return cachedConfig;
   }
   return null;
@@ -65,8 +66,9 @@ export async function saveConfigToDB(config: EvolutionConfig): Promise<boolean> 
       user_id: user.id,
       base_url: config.baseUrl.replace(/\/$/, ""),
       api_key: config.apiKey,
+      cloud_api_token: config.cloudApiToken || "",
       updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" });
+    } as any, { onConflict: "user_id" });
 
   if (!error) {
     cachedConfig = config;
