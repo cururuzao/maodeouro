@@ -93,6 +93,7 @@ const PublicConnectPage = () => {
         variant: "destructive",
         duration: 10000,
       });
+    }
     setGenerating(false);
   };
 
