@@ -55,7 +55,7 @@ const sections = [
 const AppSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
 
   const handleDisconnect = async () => {
     await signOut();
