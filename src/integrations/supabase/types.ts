@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       disparos: {
         Row: {
+          auto_start: boolean
           failed: number
           finished_at: string | null
           id: string
@@ -30,6 +31,7 @@ export type Database = {
           z_api_instance_id: string | null
         }
         Insert: {
+          auto_start?: boolean
           failed?: number
           finished_at?: string | null
           id?: string
@@ -44,6 +46,7 @@ export type Database = {
           z_api_instance_id?: string | null
         }
         Update: {
+          auto_start?: boolean
           failed?: number
           finished_at?: string | null
           id?: string

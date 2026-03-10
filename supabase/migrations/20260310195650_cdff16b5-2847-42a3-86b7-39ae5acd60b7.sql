@@ -1,0 +1,1 @@
+ALTER TABLE public.disparos ADD COLUMN IF NOT EXISTS auto_start boolean NOT NULL DEFAULT false;
