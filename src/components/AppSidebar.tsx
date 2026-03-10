@@ -71,8 +71,8 @@ const AppSidebar = () => {
             <div className="w-2 h-2 rounded-full bg-primary" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-sidebar-foreground">Blacksender</h1>
-            <p className="text-[11px] text-muted-foreground">Instance Automator</p>
+            <h1 className="text-base font-bold text-sidebar-foreground">Mão de Ouro</h1>
+            <p className="text-[11px] text-muted-foreground">Disparos</p>
           </div>
         </div>
       </div>
