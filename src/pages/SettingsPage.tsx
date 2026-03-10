@@ -90,6 +90,8 @@ const SettingsPage = () => {
               </a>
             </p>
           </div>
+
+          <Button onClick={handleSave} disabled={testing} className="w-full h-11">
             {testing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
