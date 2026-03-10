@@ -71,6 +71,33 @@ export type Database = {
           },
         ]
       }
+      evolution_configs: {
+        Row: {
+          api_key: string
+          base_url: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          base_url: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          base_url?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_lists: {
         Row: {
           created_at: string
