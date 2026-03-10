@@ -79,6 +79,17 @@ const ConectarPage = () => {
     try {
       const result: any = await connectInstance(selectedInstance, phone);
       
+      // Handle API-level errors returned with 200 status
+      if (result?.error) {
+        toast({ 
+          title: "Erro da API", 
+          description: result.message || "Erro desconhecido ao conectar instância.", 
+          variant: "destructive" 
+        });
+        setGenerating(false);
+        return;
+      }
+      
       // If instance is already connected, the API returns state:"open" without a pairing code
       if (result?.instance?.state === "open") {
         toast({ 
@@ -94,7 +105,6 @@ const ConectarPage = () => {
         setPairingCode(result.pairingCode);
         toast({ title: "Código gerado!", description: "Digite no seu WhatsApp para conectar." });
       } else if (result?.code) {
-        // Some API versions return 'code' instead of 'pairingCode'
         setPairingCode(result.code);
         toast({ title: "Código gerado!", description: "Digite no seu WhatsApp para conectar." });
       } else {
