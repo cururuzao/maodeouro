@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Smartphone, Phone, Loader2, RefreshCw, CheckCircle2, Wifi, WifiOff, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,8 @@ interface InstanceWithStatus extends ZApiInstance {
   connStatus?: ZApiStatus;
 }
 
+const POLL_INTERVAL = 5000; // 5 seconds
+
 const ConectarPage = () => {
   const [instances, setInstances] = useState<InstanceWithStatus[]>([]);
   const [loadingInstances, setLoadingInstances] = useState(true);
@@ -31,8 +33,22 @@ const ConectarPage = () => {
   const [phone, setPhone] = useState("");
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [checkingStatus, setCheckingStatus] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const selectedInstRef = useRef<InstanceWithStatus | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    setPolling(false);
+  }, []);
+
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
 
   const loadInstances = useCallback(async () => {
     setLoadingInstances(true);
@@ -67,6 +83,32 @@ const ConectarPage = () => {
   const connectedCount = instances.filter((i) => i.connStatus?.connected).length;
   const disconnectedCount = instances.filter((i) => !i.connStatus?.connected).length;
 
+  // Keep ref in sync
+  useEffect(() => {
+    selectedInstRef.current = selectedInst || null;
+  }, [selectedInst]);
+
+  const startPolling = useCallback(() => {
+    stopPolling();
+    setPolling(true);
+    pollingRef.current = setInterval(async () => {
+      const inst = selectedInstRef.current;
+      if (!inst) return;
+      try {
+        const status = await getStatus(inst);
+        if (status.connected) {
+          stopPolling();
+          setConnectionStatus("connected");
+          setPairingCode(null);
+          toast({ title: "WhatsApp conectado com sucesso! ✅" });
+          loadInstances();
+        }
+      } catch {
+        // silently retry
+      }
+    }, POLL_INTERVAL);
+  }, [stopPolling, loadInstances]);
+
   const handleGetCode = async () => {
     if (!selectedInst) {
       toast({ title: "Selecione uma instância", variant: "destructive" });
@@ -86,6 +128,7 @@ const ConectarPage = () => {
     setGenerating(true);
     setPairingCode(null);
     setConnectionStatus(null);
+    stopPolling();
 
     try {
       const status = await getStatus(selectedInst);
@@ -100,6 +143,7 @@ const ConectarPage = () => {
       if (result?.value) {
         setPairingCode(result.value);
         toast({ title: "Código gerado! 🔑", description: "Digite este código no seu WhatsApp para conectar." });
+        startPolling();
       } else {
         const errorMsg = (result as any)?.error || "Tente novamente em alguns segundos.";
         toast({ title: "Erro ao gerar código", description: errorMsg, variant: "destructive" });
@@ -108,25 +152,6 @@ const ConectarPage = () => {
       toast({ title: "Erro ao gerar código", description: err.message, variant: "destructive" });
     }
     setGenerating(false);
-  };
-
-  const handleCheckStatus = async () => {
-    if (!selectedInst) return;
-    setCheckingStatus(true);
-    try {
-      const status = await getStatus(selectedInst);
-      if (status.connected) {
-        setConnectionStatus("connected");
-        toast({ title: "Conectado com sucesso! ✅" });
-        loadInstances();
-      } else {
-        setConnectionStatus("disconnected");
-        toast({ title: "Ainda desconectado", description: "Digite o código no WhatsApp e tente novamente.", variant: "destructive" });
-      }
-    } catch (err: any) {
-      toast({ title: "Erro ao verificar", description: err.message, variant: "destructive" });
-    }
-    setCheckingStatus(false);
   };
 
   const copyCode = () => {
@@ -185,7 +210,7 @@ const ConectarPage = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              <Select value={selectedId} onValueChange={(v) => { setSelectedId(v); setPairingCode(null); setConnectionStatus(null); }}>
+              <Select value={selectedId} onValueChange={(v) => { setSelectedId(v); setPairingCode(null); setConnectionStatus(null); stopPolling(); }}>
                 <SelectTrigger className="h-11 bg-secondary border-border">
                   <SelectValue placeholder="Escolha uma instância" />
                 </SelectTrigger>
@@ -259,7 +284,7 @@ const ConectarPage = () => {
           </div>
         </div>
 
-        {/* Step 3: Show pairing code */}
+        {/* Step 3: Show pairing code + auto-polling */}
         {pairingCode && connectionStatus !== "connected" && (
           <div className="bg-card border border-primary/30 rounded-xl p-5 mb-4">
             <div className="flex items-center gap-2 mb-4">
@@ -288,14 +313,12 @@ const ConectarPage = () => {
               </ol>
             </div>
 
-            <Button className="w-full" onClick={handleCheckStatus} disabled={checkingStatus}>
-              {checkingStatus ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
-              )}
-              Verificar conexão
-            </Button>
+            {polling && (
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-2">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span>Aguardando conexão... verificando a cada 5s</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -307,7 +330,7 @@ const ConectarPage = () => {
             <p className="text-sm text-muted-foreground mt-1">
               A instância está pronta para enviar mensagens.
             </p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={() => { setPairingCode(null); setConnectionStatus(null); setPhone(""); loadInstances(); }}>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => { setPairingCode(null); setConnectionStatus(null); setPhone(""); stopPolling(); loadInstances(); }}>
               Conectar outra instância
             </Button>
           </div>
