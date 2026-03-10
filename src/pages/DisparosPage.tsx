@@ -188,14 +188,49 @@ const DisparosPage = () => {
     let failed = 0;
     const delayMs = Number(delay) * 1000;
 
-    for (const lead of leads) {
+    let consecutiveFailures = 0;
+
+    for (let i = 0; i < leads.length; i++) {
       if (abortRef.current) break;
+      const lead = leads[i];
+
+      // Check instance health every 5 leads or after consecutive failures
+      if (i % 5 === 0 || consecutiveFailures >= 2) {
+        try {
+          const status = await getStatus(inst);
+          console.log(`[Disparo] Status check:`, JSON.stringify(status));
+          if (!status.connected || !status.smartphoneConnected) {
+            toast({
+              title: "⚠️ Instância desconectada!",
+              description: "O número pode ter sido banido ou caiu. Disparo interrompido.",
+              variant: "destructive",
+            });
+            // Disconnect the instance
+            try { await disconnectInstance(inst); } catch { /* ignore */ }
+            abortRef.current = true;
+            break;
+          }
+        } catch (err) {
+          console.warn("[Disparo] Erro ao verificar status:", err);
+          // If we can't check status after failures, stop
+          if (consecutiveFailures >= 2) {
+            toast({
+              title: "⚠️ Não foi possível verificar a instância",
+              description: "Disparo interrompido por segurança.",
+              variant: "destructive",
+            });
+            abortRef.current = true;
+            break;
+          }
+        }
+      }
 
       const text = replaceVariables(template.content, lead as any);
 
       try {
         await sendTemplateMessage(inst, lead.phone, text, template.type, template.metadata || {});
         sent++;
+        consecutiveFailures = 0;
 
         // Post-send: Mute → Archive → Delete
         try {
@@ -206,8 +241,10 @@ const DisparosPage = () => {
           await deleteChat(inst, lead.phone);
         } catch { /* ignore post-send errors */ }
 
-      } catch {
+      } catch (err: any) {
         failed++;
+        consecutiveFailures++;
+        console.error(`[Disparo] Falha ao enviar para ${lead.phone}:`, err?.message);
       }
 
       setProgress({ sent, failed, total: leads.length });
@@ -216,7 +253,7 @@ const DisparosPage = () => {
         await supabase.from("disparos").update({ sent, failed }).eq("id", disparo.id);
       }
 
-      if (sent + failed < leads.length && !abortRef.current && delayMs > 0) {
+      if (i < leads.length - 1 && !abortRef.current && delayMs > 0) {
         await new Promise((r) => setTimeout(r, delayMs));
       }
     }
