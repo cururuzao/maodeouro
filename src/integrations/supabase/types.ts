@@ -26,6 +26,7 @@ export type Database = {
           status: string
           template_id: string | null
           total: number
+          user_id: string | null
         }
         Insert: {
           failed?: number
@@ -38,6 +39,7 @@ export type Database = {
           status?: string
           template_id?: string | null
           total?: number
+          user_id?: string | null
         }
         Update: {
           failed?: number
@@ -50,6 +52,7 @@ export type Database = {
           status?: string
           template_id?: string | null
           total?: number
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -74,18 +77,21 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           name?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -124,6 +130,27 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       templates: {
         Row: {
           content: string
@@ -131,6 +158,7 @@ export type Database = {
           id: string
           name: string
           type: string
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -138,6 +166,7 @@ export type Database = {
           id?: string
           name: string
           type?: string
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -145,6 +174,7 @@ export type Database = {
           id?: string
           name?: string
           type?: string
+          user_id?: string | null
         }
         Relationships: []
       }
