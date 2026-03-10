@@ -53,8 +53,8 @@ const InstancesPage = () => {
   useEffect(() => { loadInstances(); }, [loadInstances]);
 
   const handleCreate = async () => {
-    if (!newName.trim() || !newInstanceId.trim() || !newToken.trim()) {
-      toast({ title: "Preencha todos os campos obrigatórios", variant: "destructive" });
+    if (!newName.trim() || !newInstanceId.trim() || !newToken.trim() || !newClientToken.trim()) {
+      toast({ title: "Preencha todos os campos obrigatórios", description: "Instance ID, Token e Client-Token são obrigatórios. Obtenha em app.z-api.io.", variant: "destructive" });
       return;
     }
     setCreating(true);
@@ -152,8 +152,8 @@ const InstancesPage = () => {
               <Input value={newToken} onChange={(e) => setNewToken(e.target.value)} placeholder="Token da instância" className="h-10 bg-secondary border-border font-mono text-xs" type="password" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Client-Token (segurança)</Label>
-              <Input value={newClientToken} onChange={(e) => setNewClientToken(e.target.value)} placeholder="Token de segurança da conta" className="h-10 bg-secondary border-border font-mono text-xs" type="password" />
+              <Label className="text-xs text-muted-foreground">Client-Token *</Label>
+              <Input value={newClientToken} onChange={(e) => setNewClientToken(e.target.value)} placeholder="Token de segurança da conta (obrigatório)" className="h-10 bg-secondary border-border font-mono text-xs" type="password" />
             </div>
           </div>
           <div className="flex gap-3">
