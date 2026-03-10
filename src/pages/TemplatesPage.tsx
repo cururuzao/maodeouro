@@ -49,6 +49,10 @@ interface TemplateMetadata {
   longitude?: string;
   locationName?: string;
   locationAddress?: string;
+  // Profile customization (applied when disparo starts)
+  profileName?: string;
+  profilePictureUrl?: string;
+  profileDescription?: string;
 }
 
 interface Template {
