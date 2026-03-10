@@ -19,6 +19,9 @@ const InstancesPage = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [qrData, setQrData] = useState<{ name: string; data: QRCodeResponse } | null>(null);
   const [states, setStates] = useState<Record<string, string>>({});
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [connectingInstance, setConnectingInstance] = useState<string | null>(null);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
 
   const loadInstances = useCallback(async () => {
     setLoading(true);
