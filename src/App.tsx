@@ -18,6 +18,7 @@ import Messages from "./pages/Messages";
 import SettingsPage from "./pages/SettingsPage";
 import ConectarPage from "./pages/ConectarPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
