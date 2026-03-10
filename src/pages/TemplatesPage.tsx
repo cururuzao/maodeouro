@@ -27,9 +27,17 @@ const VARIABLES = [
   { tag: "{{hora}}", label: "Hora", sample: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) },
 ];
 
+interface TemplateButton {
+  id: string;
+  text: string;
+  type: "reply" | "url" | "call";
+  url?: string;
+  phoneNumber?: string;
+}
+
 interface TemplateMetadata {
   footer?: string;
-  buttons?: { id: string; text: string }[];
+  buttons?: TemplateButton[];
   listButtonText?: string;
   listSections?: { title: string; rows: { id: string; title: string; description: string }[] }[];
   mediaType?: "image" | "video" | "document" | "audio";
