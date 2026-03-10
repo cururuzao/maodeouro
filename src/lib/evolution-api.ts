@@ -45,12 +45,12 @@ export async function loadConfig(): Promise<EvolutionConfig | null> {
 
   const { data } = await supabase
     .from("evolution_configs")
-    .select("base_url, api_key")
+    .select("base_url, api_key, cloud_api_token")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (data) {
-    cachedConfig = { baseUrl: data.base_url, apiKey: data.api_key };
+    cachedConfig = { baseUrl: data.base_url, apiKey: data.api_key, cloudApiToken: (data as any).cloud_api_token || "" };
     return cachedConfig;
   }
   return null;
