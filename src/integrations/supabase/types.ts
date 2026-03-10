@@ -353,6 +353,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_get_all_users: { Args: never; Returns: Json }
       admin_get_all_z_api_instances: {
         Args: never
         Returns: {
@@ -373,6 +374,7 @@ export type Database = {
         }
       }
       admin_get_stats: { Args: never; Returns: Json }
+      admin_get_user_data: { Args: { _target_user_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
