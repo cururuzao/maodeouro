@@ -77,7 +77,7 @@ const ConectarPage = () => {
     setConnectionStatus(null);
 
     try {
-      const result = await connectInstance(selectedInstance, phone);
+      const result: any = await connectInstance(selectedInstance, phone);
       
       // If instance is already connected, the API returns state:"open" without a pairing code
       if (result?.instance?.state === "open") {
