@@ -1,17 +1,18 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 const ApplicationForm = () => {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log({ name, email });
+    navigate("/whatsapp", { state: { name, email } });
   };
 
   return (
