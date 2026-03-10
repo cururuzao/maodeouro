@@ -19,7 +19,9 @@ interface LeadList {
 interface Template {
   id: string;
   name: string;
+  type: string;
   content: string;
+  metadata: Record<string, any> | null;
 }
 
 interface Disparo {
