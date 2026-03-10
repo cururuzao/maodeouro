@@ -135,7 +135,7 @@ const ConectarPage = () => {
       const result = await getPhoneCode(selectedInst, cleanPhone);
       console.log("[ConectarPage] Result:", JSON.stringify(result));
       
-      const pairingValue = result?.value || result?.code;
+      const pairingValue = result?.value || (result as any)?.code;
       if (pairingValue) {
         setPairingCode(pairingValue);
         toast({ title: "Código gerado! 🔑", description: "Digite este código no seu WhatsApp para conectar." });
