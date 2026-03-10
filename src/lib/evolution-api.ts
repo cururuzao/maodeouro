@@ -1,7 +1,7 @@
 // Evolution API client
-// The user must provide their Evolution API base URL and API key
+// Credentials are persisted in the database per user
 
-const STORAGE_KEY = "evolution_api_config";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface EvolutionConfig {
   baseUrl: string;
@@ -33,26 +33,67 @@ export interface ConnectionState {
   };
 }
 
-export function getConfig(): EvolutionConfig | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
+// In-memory cache to avoid repeated DB reads
+let cachedConfig: EvolutionConfig | null = null;
+
+export async function loadConfig(): Promise<EvolutionConfig | null> {
+  if (cachedConfig) return cachedConfig;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("evolution_configs")
+    .select("base_url, api_key")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (data) {
+    cachedConfig = { baseUrl: data.base_url, apiKey: data.api_key };
+    return cachedConfig;
   }
+  return null;
+}
+
+export async function saveConfigToDB(config: EvolutionConfig): Promise<boolean> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from("evolution_configs")
+    .upsert({
+      user_id: user.id,
+      base_url: config.baseUrl.replace(/\/$/, ""),
+      api_key: config.apiKey,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
+
+  if (!error) {
+    cachedConfig = config;
+    return true;
+  }
+  return false;
+}
+
+export function clearCachedConfig() {
+  cachedConfig = null;
+}
+
+// Legacy sync helpers (kept for backward compat during transition)
+export function getConfig(): EvolutionConfig | null {
+  return cachedConfig;
 }
 
 export function saveConfig(config: EvolutionConfig) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  cachedConfig = config;
 }
 
 export function clearConfig() {
-  localStorage.removeItem(STORAGE_KEY);
+  cachedConfig = null;
 }
 
 async function apiCall(path: string, options?: RequestInit) {
-  const config = getConfig();
+  const config = cachedConfig || await loadConfig();
   if (!config) throw new Error("Evolution API não configurada");
 
   const url = `${config.baseUrl.replace(/\/$/, "")}${path}`;
@@ -221,7 +262,6 @@ export async function sendBulkMessages(
     } catch (err: any) {
       failed.push({ number, error: err.message });
     }
-    // delay between messages to avoid rate limiting
     if (delayMs > 0) {
       await new Promise((r) => setTimeout(r, delayMs));
     }
