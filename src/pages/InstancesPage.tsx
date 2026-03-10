@@ -36,6 +36,7 @@ const InstancesPage = () => {
   const [newIntegration, setNewIntegration] = useState<"WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS">("WHATSAPP-BAILEYS");
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [businessToken, setBusinessToken] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [connectingInstance, setConnectingInstance] = useState<string | null>(null);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
