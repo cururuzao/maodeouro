@@ -79,7 +79,9 @@ const AppSidebar = () => {
 
       {/* Nav */}
       <nav className="flex-1 py-3 px-3 space-y-5 overflow-y-auto">
-        {sections.map((section) => (
+        {sections
+          .filter((section) => section.label !== "ADMIN" || isAdmin)
+          .map((section) => (
           <div key={section.label}>
             <p className="text-[10px] font-semibold text-muted-foreground tracking-wider px-3 mb-1.5">
               {section.label}
