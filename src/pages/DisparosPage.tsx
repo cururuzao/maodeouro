@@ -36,7 +36,7 @@ interface Disparo {
 
 const DisparosPage = () => {
   const { user } = useAuth();
-  const [instances, setInstances] = useState<Instance[]>([]);
+  const [instances, setInstances] = useState<{ name: string }[]>([]);
   const [lists, setLists] = useState<LeadList[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [disparos, setDisparos] = useState<Disparo[]>([]);
