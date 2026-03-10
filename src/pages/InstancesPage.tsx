@@ -33,6 +33,7 @@ const InstancesPage = () => {
   const [instances, setInstances] = useState<NormalizedInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
+  const [newIntegration, setNewIntegration] = useState<"WHATSAPP-BAILEYS" | "WHATSAPP-BUSINESS">("WHATSAPP-BAILEYS");
   const [creating, setCreating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -57,9 +58,10 @@ const InstancesPage = () => {
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      await createInstance(newName.trim());
-      toast({ title: `Instância "${newName}" criada!` });
+      await createInstance(newName.trim(), newIntegration);
+      toast({ title: `Instância "${newName}" criada!`, description: `Tipo: ${newIntegration === "WHATSAPP-BUSINESS" ? "Cloud API (Oficial)" : "Baileys"}` });
       setNewName("");
+      setNewIntegration("WHATSAPP-BAILEYS");
       setShowCreate(false);
       loadInstances();
     } catch (err: any) {
@@ -134,10 +136,31 @@ const InstancesPage = () => {
 
       {/* Create modal */}
       {showCreate && (
-        <div className="bg-card border border-border rounded-xl p-5 mb-6">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Criar instância</h3>
+        <div className="bg-card border border-border rounded-xl p-5 mb-6 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Criar instância</h3>
           <div className="flex gap-3">
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome da instância" className="h-10 bg-secondary border-border" onKeyDown={(e) => e.key === "Enter" && handleCreate()} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-medium">Tipo de conexão</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setNewIntegration("WHATSAPP-BAILEYS")}
+                className={`rounded-lg border p-3 text-left transition-all ${newIntegration === "WHATSAPP-BAILEYS" ? "border-primary bg-primary/10" : "border-border bg-secondary hover:border-muted-foreground/30"}`}
+              >
+                <p className="text-sm font-semibold text-foreground">Baileys</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Conexão via QR Code / código de pareamento. Gratuito, sem custos da Meta.</p>
+              </button>
+              <button
+                onClick={() => setNewIntegration("WHATSAPP-BUSINESS")}
+                className={`rounded-lg border p-3 text-left transition-all ${newIntegration === "WHATSAPP-BUSINESS" ? "border-primary bg-primary/10" : "border-border bg-secondary hover:border-muted-foreground/30"}`}
+              >
+                <p className="text-sm font-semibold text-foreground">Cloud API (Oficial)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">API oficial da Meta. Suporte a botões com link, templates aprovados.</p>
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-3">
             <Button onClick={handleCreate} disabled={creating} size="sm" className="h-10 px-5">
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar"}
             </Button>
