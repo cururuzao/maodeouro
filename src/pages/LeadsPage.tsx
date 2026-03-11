@@ -196,7 +196,41 @@ const LeadsPage = () => {
       return;
     }
     setLists((prev) => prev.map((l) => l.id === listId ? { ...l, auto_dispatch: enabled } : l));
-    toast({ title: enabled ? "Disparo automático ativado ⚡" : "Disparo automático desativado" });
+
+    if (enabled) {
+      toast({ title: "Disparo ativado ⚡", description: "Verificando instâncias conectadas..." });
+
+      // Check if any instance is already connected and trigger dispatch
+      const { data: instances } = await supabase.from("z_api_instances").select("id");
+      if (instances && instances.length > 0) {
+        for (const inst of instances) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) break;
+
+            const res = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auto-disparo`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ instance_db_id: inst.id }),
+              }
+            );
+            const result = await res.json();
+            if (result?.sent > 0) {
+              toast({ title: `Disparo iniciado! ${result.sent} enviados` });
+              fetchLists();
+              break;
+            }
+          } catch { /* continue */ }
+        }
+      }
+    } else {
+      toast({ title: "Disparo pausado ⏸" });
+    }
   };
 
   const setDispatchTemplate = async (listId: string, templateId: string) => {

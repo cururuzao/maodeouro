@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
 
     // Accept optional instance_db_id to target a specific instance
     let targetInstanceId: string | null = null;
+    let userId: string | null = null;
     try {
       const body = await req.json();
       targetInstanceId = body?.instance_db_id || null;
@@ -159,6 +160,32 @@ Deno.serve(async (req) => {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // If called from frontend with auth, find user's instances and dispatch
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: authData } = await supabase.auth.getUser(token);
+      if (authData?.user) {
+        userId = authData.user.id;
+        const { data: instances } = await supabase
+          .from("z_api_instances")
+          .select("id")
+          .eq("user_id", userId);
+
+        if (instances && instances.length > 0) {
+          const results = [];
+          for (const inst of instances) {
+            const r = await processInstanceDispatch(supabase, inst.id);
+            results.push(r);
+          }
+          return new Response(JSON.stringify({ results }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
     }
 
     // Cron mode: check all pending auto_start disparos (legacy support)
