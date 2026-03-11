@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2 } from "lucide-react";
+import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2, Zap, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +17,14 @@ interface LeadList {
   description: string;
   created_at: string;
   lead_count?: number;
+  dispatched_count?: number;
+  auto_dispatch?: boolean;
+  dispatch_template_id?: string | null;
+}
+
+interface Template {
+  id: string;
+  name: string;
 }
 
 const LeadsPage = () => {
@@ -26,30 +36,36 @@ const LeadsPage = () => {
   const [importMode, setImportMode] = useState<"upload" | "paste">("paste");
   const [hasCountryCode, setHasCountryCode] = useState<boolean | null>(null);
   const [lists, setLists] = useState<LeadList[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const fetchLists = async () => {
     setLoading(true);
-    const { data: listsData, error } = await supabase
-      .from("lead_lists")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const [listsRes, templatesRes] = await Promise.all([
+      supabase.from("lead_lists").select("*").order("created_at", { ascending: false }),
+      supabase.from("templates").select("id, name").order("created_at", { ascending: false }),
+    ]);
 
-    if (error) {
-      toast({ title: "Erro ao carregar listas", description: error.message, variant: "destructive" });
+    if (listsRes.error) {
+      toast({ title: "Erro ao carregar listas", description: listsRes.error.message, variant: "destructive" });
       setLoading(false);
       return;
     }
 
-    // Get counts for each list
+    setTemplates(templatesRes.data || []);
+
     const listsWithCounts: LeadList[] = [];
-    for (const list of listsData || []) {
-      const { count } = await supabase
-        .from("leads")
-        .select("*", { count: "exact", head: true })
-        .eq("list_id", list.id);
-      listsWithCounts.push({ ...list, lead_count: count || 0 });
+    for (const list of listsRes.data || []) {
+      const [totalRes, dispatchedRes] = await Promise.all([
+        supabase.from("leads").select("*", { count: "exact", head: true }).eq("list_id", list.id),
+        supabase.from("leads").select("*", { count: "exact", head: true }).eq("list_id", list.id).eq("dispatched", true),
+      ]);
+      listsWithCounts.push({
+        ...list,
+        lead_count: totalRes.count || 0,
+        dispatched_count: dispatchedRes.count || 0,
+      });
     }
     setLists(listsWithCounts);
     setLoading(false);
@@ -61,7 +77,6 @@ const LeadsPage = () => {
     if (!listName.trim() || !pasteData.trim()) return;
     setSaving(true);
 
-    // Create the list
     const { data: newList, error: listError } = await supabase
       .from("lead_lists")
       .insert({ name: listName, description, user_id: user?.id })
@@ -74,7 +89,6 @@ const LeadsPage = () => {
       return;
     }
 
-    // Parse pasted data
     const lines = pasteData.split("\n").filter((l) => l.trim());
     if (lines.length < 2) {
       toast({ title: "Dados insuficientes", description: "Cole ao menos o cabeçalho e uma linha", variant: "destructive" });
@@ -135,6 +149,44 @@ const LeadsPage = () => {
       return;
     }
     toast({ title: "Lista excluída" });
+    fetchLists();
+  };
+
+  const toggleAutoDispatch = async (listId: string, enabled: boolean) => {
+    const { error } = await supabase
+      .from("lead_lists")
+      .update({ auto_dispatch: enabled } as any)
+      .eq("id", listId);
+    if (error) {
+      toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      return;
+    }
+    setLists((prev) => prev.map((l) => l.id === listId ? { ...l, auto_dispatch: enabled } : l));
+    toast({ title: enabled ? "Disparo automático ativado ⚡" : "Disparo automático desativado" });
+  };
+
+  const setDispatchTemplate = async (listId: string, templateId: string) => {
+    const { error } = await supabase
+      .from("lead_lists")
+      .update({ dispatch_template_id: templateId || null } as any)
+      .eq("id", listId);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      return;
+    }
+    setLists((prev) => prev.map((l) => l.id === listId ? { ...l, dispatch_template_id: templateId || null } : l));
+  };
+
+  const resetDispatched = async (listId: string) => {
+    const { error } = await supabase
+      .from("leads")
+      .update({ dispatched: false, dispatched_at: null } as any)
+      .eq("list_id", listId);
+    if (error) {
+      toast({ title: "Erro ao resetar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Contadores resetados" });
     fetchLists();
   };
 
@@ -232,16 +284,71 @@ const LeadsPage = () => {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {lists.map((list) => (
-              <div key={list.id} className="bg-card border border-border rounded-xl p-5 group relative">
-                <button onClick={() => handleDelete(list.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                <h3 className="font-semibold text-foreground text-sm">{list.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{list.description || "Sem descrição"}</p>
-                <p className="text-xs text-primary mt-2">{list.lead_count} contatos</p>
-              </div>
-            ))}
+            {lists.map((list) => {
+              const total = list.lead_count || 0;
+              const dispatched = list.dispatched_count || 0;
+              const pct = total > 0 ? (dispatched / total) * 100 : 0;
+
+              return (
+                <div key={list.id} className="bg-card border border-border rounded-xl p-5 group relative space-y-3">
+                  <button onClick={() => handleDelete(list.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <h3 className="font-semibold text-foreground text-sm">{list.name}</h3>
+                  <p className="text-xs text-muted-foreground">{list.description || "Sem descrição"}</p>
+
+                  {/* Dispatched counter */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">{dispatched} / {total} disparados</span>
+                      <span className="text-primary font-medium">{Math.round(pct)}%</span>
+                    </div>
+                    <Progress value={pct} className="h-1.5" />
+                  </div>
+
+                  {/* Template selector */}
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                      <FileText className="w-3 h-3" /> Template de disparo
+                    </Label>
+                    <select
+                      value={list.dispatch_template_id || ""}
+                      onChange={(e) => setDispatchTemplate(list.id, e.target.value)}
+                      className="w-full h-8 rounded-md bg-secondary border border-border px-2 text-xs text-foreground"
+                    >
+                      <option value="">Selecione...</option>
+                      {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Auto dispatch toggle */}
+                  <div className="flex items-center justify-between pt-1">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1 cursor-pointer">
+                      <Zap className="w-3 h-3" /> Disparo automático
+                    </Label>
+                    <Switch
+                      checked={!!list.auto_dispatch}
+                      onCheckedChange={(v) => {
+                        if (v && !list.dispatch_template_id) {
+                          toast({ title: "Selecione um template primeiro", variant: "destructive" });
+                          return;
+                        }
+                        toggleAutoDispatch(list.id, v);
+                      }}
+                    />
+                  </div>
+
+                  {dispatched > 0 && (
+                    <button
+                      onClick={() => resetDispatched(list.id)}
+                      className="text-xs text-muted-foreground hover:text-foreground underline"
+                    >
+                      Resetar contadores
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
