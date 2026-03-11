@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
-import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2, Zap, FileText, Pencil, Check, X, Pause, Play } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2, Zap, FileText, Pencil, Check, X, Pause, Play, Wifi, WifiOff, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -27,6 +26,19 @@ interface Template {
   name: string;
 }
 
+interface ActiveDisparo {
+  id: string;
+  list_id: string | null;
+  instance_name: string;
+  status: string;
+  sent: number;
+  failed: number;
+  total: number;
+  started_at: string;
+  template_id: string | null;
+  z_api_instance_id: string | null;
+}
+
 const LeadsPage = () => {
   const { user } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
@@ -39,6 +51,9 @@ const LeadsPage = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeDisparos, setActiveDisparos] = useState<ActiveDisparo[]>([]);
+  const [instanceStatuses, setInstanceStatuses] = useState<Record<string, boolean>>({});
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Edit state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -47,9 +62,10 @@ const LeadsPage = () => {
 
   const fetchLists = async () => {
     setLoading(true);
-    const [listsRes, templatesRes] = await Promise.all([
+    const [listsRes, templatesRes, disparosRes] = await Promise.all([
       supabase.from("lead_lists").select("*").order("created_at", { ascending: false }),
       supabase.from("templates").select("id, name").order("created_at", { ascending: false }),
+      supabase.from("disparos").select("*").in("status", ["running", "pending"]),
     ]);
 
     if (listsRes.error) {
@@ -59,6 +75,7 @@ const LeadsPage = () => {
     }
 
     setTemplates(templatesRes.data || []);
+    setActiveDisparos((disparosRes.data as any[]) || []);
 
     const listsWithCounts: LeadList[] = [];
     for (const list of listsRes.data || []) {
@@ -76,7 +93,59 @@ const LeadsPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchLists(); }, []);
+  // Lightweight refresh for active disparos + lead counts
+  const refreshActiveData = async () => {
+    const [disparosRes] = await Promise.all([
+      supabase.from("disparos").select("*").in("status", ["running", "pending"]),
+    ]);
+    setActiveDisparos((disparosRes.data as any[]) || []);
+
+    // Refresh lead counts for active lists
+    setLists((prev) =>
+      prev.map((l) => l)
+    );
+    // Also refresh dispatched counts
+    const updatedLists = [...lists];
+    for (const l of updatedLists) {
+      if (l.auto_dispatch) {
+        const { count } = await supabase
+          .from("leads")
+          .select("*", { count: "exact", head: true })
+          .eq("list_id", l.id)
+          .eq("dispatched", true);
+        l.dispatched_count = count || 0;
+      }
+    }
+    setLists([...updatedLists]);
+  };
+
+  // Check instance connection status
+  const checkInstanceStatus = async (instanceDbId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/z-api-proxy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ instance_id: "", instance_token: "", endpoint: "status", method: "GET" }),
+      });
+      // We can't easily check without instance credentials here, so we'll use disparo status instead
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchLists();
+    // Poll active data every 5 seconds when there are active lists
+    pollRef.current = setInterval(() => {
+      refreshActiveData();
+    }, 5000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   const handleProcess = async () => {
     if (!listName.trim() || !pasteData.trim()) return;
@@ -200,7 +269,6 @@ const LeadsPage = () => {
     if (enabled) {
       toast({ title: "Disparo ativado ⚡", description: "Verificando instâncias conectadas..." });
 
-      // Check if any instance is already connected and trigger dispatch
       const { data: instances } = await supabase.from("z_api_instances").select("id");
       if (instances && instances.length > 0) {
         for (const inst of instances) {
@@ -256,6 +324,14 @@ const LeadsPage = () => {
     }
     toast({ title: "Contadores resetados" });
     fetchLists();
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleString("pt-BR", {
+      day: "2-digit", month: "2-digit", year: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+    });
   };
 
   if (showCreate) {
@@ -358,8 +434,39 @@ const LeadsPage = () => {
               const pct = total > 0 ? (dispatched / total) * 100 : 0;
               const isEditing = editingId === list.id;
 
+              // Find active disparo for this list
+              const activeDisparo = activeDisparos.find((d) => d.list_id === list.id);
+              const isRunning = !!activeDisparo && activeDisparo.status === "running";
+              const templateName = list.dispatch_template_id
+                ? templates.find((t) => t.id === list.dispatch_template_id)?.name
+                : null;
+
               return (
-                <div key={list.id} className="bg-card border border-border rounded-xl p-5 group relative space-y-3">
+                <div
+                  key={list.id}
+                  className={`bg-card border rounded-xl p-5 group relative space-y-3 transition-all ${
+                    isRunning
+                      ? "border-green-500/50 shadow-[0_0_15px_-3px] shadow-green-500/20"
+                      : list.auto_dispatch
+                      ? "border-primary/30"
+                      : "border-border"
+                  }`}
+                >
+                  {/* Pulsing indicator for active dispatch */}
+                  {isRunning && (
+                    <div className="absolute -top-1.5 -right-1.5 flex items-center justify-center">
+                      <span className="absolute inline-flex h-4 w-4 rounded-full bg-green-400 opacity-75 animate-ping" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
+                    </div>
+                  )}
+
+                  {/* Active dispatch badge */}
+                  {list.auto_dispatch && !isRunning && (
+                    <div className="absolute -top-1.5 -right-1.5">
+                      <span className="inline-flex h-3 w-3 rounded-full bg-primary/60" />
+                    </div>
+                  )}
+
                   {/* Action buttons */}
                   <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {!isEditing && (
@@ -403,6 +510,36 @@ const LeadsPage = () => {
                       <h3 className="font-semibold text-foreground text-sm">{list.name}</h3>
                       <p className="text-xs text-muted-foreground">{list.description || "Sem descrição"}</p>
                     </>
+                  )}
+
+                  {/* Active disparo status panel */}
+                  {isRunning && activeDisparo && (
+                    <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-1.5">
+                        <Wifi className="w-3.5 h-3.5 text-green-500" />
+                        <span className="text-xs font-semibold text-green-600">Disparando</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                        <div className="text-muted-foreground">Instância:</div>
+                        <div className="text-foreground font-medium truncate">{activeDisparo.instance_name}</div>
+                        <div className="text-muted-foreground">Enviados:</div>
+                        <div className="text-foreground font-medium">
+                          <span className="text-green-600">{activeDisparo.sent}</span>
+                          {activeDisparo.failed > 0 && (
+                            <span className="text-destructive ml-1">({activeDisparo.failed} falhas)</span>
+                          )}
+                          <span className="text-muted-foreground"> / {activeDisparo.total}</span>
+                        </div>
+                        <div className="text-muted-foreground">Início:</div>
+                        <div className="text-foreground font-medium">{formatDateTime(activeDisparo.started_at)}</div>
+                        {templateName && (
+                          <>
+                            <div className="text-muted-foreground">Template:</div>
+                            <div className="text-foreground font-medium truncate">{templateName}</div>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   )}
 
                   {/* Dispatched counter */}
