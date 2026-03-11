@@ -422,6 +422,10 @@ async function processLegacyDisparo(supabase: any, disparo: any) {
   if (!statusRes.ok || !statusRes.data?.connected) {
     return { disparo_id: disparo.id, status: "instance_disconnected" };
   }
+  const connectedPhone = statusRes.data?.phoneNumber || statusRes.data?.phone || "";
+  
+  // Store the phone number on the disparo record
+  await supabase.from("disparos").update({ phone_number: connectedPhone }).eq("id", disparo.id);
 
   let template: any = null;
   if (disparo.template_id) {
