@@ -111,7 +111,7 @@ const PublicConnectPage = () => {
       } catch {
         // Error, keep waiting
       }
-    }, 15000);
+    }, 3000);
   };
 
   const startPolling = () => {
