@@ -379,7 +379,7 @@ async function processInstanceDispatch(supabase: any, instanceDbId: string) {
         }
       }
 
-      await sleep(3000);
+      await sleep(200);
     }
 
     // If instance died, disconnect it
