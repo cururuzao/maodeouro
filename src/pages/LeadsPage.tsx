@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2, Zap, FileText, Pencil, Check, X } from "lucide-react";
+import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2, Zap, FileText, Pencil, Check, X, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
