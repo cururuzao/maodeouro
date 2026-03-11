@@ -22,6 +22,7 @@ export type Database = {
           id: string
           instance_name: string
           list_id: string | null
+          phone_number: string | null
           sent: number
           started_at: string
           status: string
@@ -37,6 +38,7 @@ export type Database = {
           id?: string
           instance_name: string
           list_id?: string | null
+          phone_number?: string | null
           sent?: number
           started_at?: string
           status?: string
@@ -52,6 +54,7 @@ export type Database = {
           id?: string
           instance_name?: string
           list_id?: string | null
+          phone_number?: string | null
           sent?: number
           started_at?: string
           status?: string
@@ -347,6 +350,7 @@ export type Database = {
           id: string
           instance_name: string
           list_id: string | null
+          phone_number: string | null
           sent: number
           started_at: string
           status: string
