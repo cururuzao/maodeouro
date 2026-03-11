@@ -29,6 +29,7 @@ interface Disparo {
   id: string; instance_name: string; template_id: string | null; list_id: string | null;
   status: string; total: number; sent: number; failed: number;
   started_at: string; finished_at: string | null; z_api_instance_id: string | null;
+  phone_number?: string;
 }
 
 const DisparosPage = () => {
