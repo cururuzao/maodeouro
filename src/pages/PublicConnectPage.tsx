@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Smartphone, Phone, Loader2, CheckCircle2, Copy, ArrowRight, ArrowLeft, User, Mail } from "lucide-react";
+import { Smartphone, Phone, Loader2, CheckCircle2, Copy, ArrowRight, ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,12 @@ const PublicConnectPage = () => {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const instanceDbIdRef = useRef<string | null>(null);
 
+  // Queue state
+  const [inQueue, setInQueue] = useState(false);
+  const [queueSeconds, setQueueSeconds] = useState(0);
+  const queueTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const queueRetryRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     instanceDbIdRef.current = instanceDbId;
   }, [instanceDbId]);
@@ -29,6 +35,8 @@ const PublicConnectPage = () => {
   useEffect(() => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
+      if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+      if (queueRetryRef.current) clearInterval(queueRetryRef.current);
     };
   }, []);
 
@@ -58,6 +66,69 @@ const PublicConnectPage = () => {
     setStep(2);
   };
 
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s.toString().padStart(2, "0")}s` : `${s}s`;
+  };
+
+  const startQueue = (estimatedSeconds: number) => {
+    setInQueue(true);
+    setQueueSeconds(estimatedSeconds);
+    setStep(2); // stay on step 2
+
+    // Countdown timer
+    if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+    queueTimerRef.current = setInterval(() => {
+      setQueueSeconds((prev) => {
+        if (prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Retry every 15 seconds
+    if (queueRetryRef.current) clearInterval(queueRetryRef.current);
+    queueRetryRef.current = setInterval(async () => {
+      try {
+        const cleanPhone = phone.replace(/\D/g, "");
+        const result = await callEdge({ action: "get-code", name, email, phone: cleanPhone });
+
+        if (result.status === "busy") {
+          // Still busy, update estimate
+          setQueueSeconds(result.estimated_seconds || 30);
+          return;
+        }
+
+        // Got a code! Exit queue
+        if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+        if (queueRetryRef.current) clearInterval(queueRetryRef.current);
+        setInQueue(false);
+        setPairingCode(result.code);
+        setInstanceDbId(result.instance_db_id);
+        setStep(3);
+        toast({ title: "Código gerado! 🔑" });
+        startPolling();
+      } catch {
+        // Error, keep waiting
+      }
+    }, 15000);
+  };
+
+  const startPolling = () => {
+    setPolling(true);
+    pollingRef.current = setInterval(async () => {
+      try {
+        const status = await callEdge({ action: "check-status", instance_db_id: instanceDbIdRef.current });
+        if (status.connected) {
+          if (pollingRef.current) clearInterval(pollingRef.current);
+          setPolling(false);
+          setConnected(true);
+          toast({ title: "WhatsApp conectado com sucesso! ✅" });
+        }
+      } catch {}
+    }, POLL_INTERVAL);
+  };
+
   const handleGetCode = async () => {
     let cleanPhone = phone.replace(/\D/g, "");
     if (cleanPhone.length < 10) {
@@ -68,23 +139,19 @@ const PublicConnectPage = () => {
     setGenerating(true);
     try {
       const result = await callEdge({ action: "get-code", name, email, phone: cleanPhone });
+
+      // Check if all instances are busy
+      if (result.status === "busy") {
+        startQueue(result.estimated_seconds || 60);
+        setGenerating(false);
+        return;
+      }
+
       setPairingCode(result.code);
       setInstanceDbId(result.instance_db_id);
       setStep(3);
       toast({ title: "Código gerado! 🔑" });
-
-      setPolling(true);
-      pollingRef.current = setInterval(async () => {
-        try {
-          const status = await callEdge({ action: "check-status", instance_db_id: instanceDbIdRef.current });
-          if (status.connected) {
-            if (pollingRef.current) clearInterval(pollingRef.current);
-            setPolling(false);
-            setConnected(true);
-            toast({ title: "WhatsApp conectado com sucesso! ✅" });
-          }
-        } catch {}
-      }, POLL_INTERVAL);
+      startPolling();
     } catch (err: any) {
       toast({
         title: "⏳ Alta demanda!",
@@ -178,8 +245,8 @@ const PublicConnectPage = () => {
             </div>
           )}
 
-          {/* Step 2: Phone */}
-          {step === 2 && (
+          {/* Step 2: Phone (or Queue) */}
+          {step === 2 && !inQueue && (
             <div className="text-center">
               <div className="flex justify-center mb-4">
                 <div className="w-12 h-12 rounded-lg border-2 border-red-600 flex items-center justify-center">
@@ -226,6 +293,42 @@ const PublicConnectPage = () => {
                     )}
                   </Button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Queue / Waiting Screen */}
+          {step === 2 && inQueue && (
+            <div className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-amber-400 flex items-center justify-center animate-pulse">
+                  <Clock className="w-8 h-8 text-amber-500" />
+                </div>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Fila de Espera</h1>
+              <p className="text-gray-500 text-sm mb-6">
+                No momento todas as vagas estão ocupadas. Assim que uma vaga liberar, seu código será gerado automaticamente.
+              </p>
+
+              {/* Countdown */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-6">
+                <p className="text-xs text-amber-600 font-medium mb-2">Tempo estimado de espera</p>
+                <p className="text-4xl font-bold font-mono text-amber-700">{formatTime(queueSeconds)}</p>
+                <p className="text-xs text-amber-500 mt-2">Não feche esta página</p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-left">
+                <p className="text-sm text-gray-600">
+                  💡 <strong>O que está acontecendo?</strong>
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Outro número está sendo processado neste momento. Assim que ele terminar ou desconectar, sua vez chegará automaticamente.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-400 mt-6">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Verificando disponibilidade...</span>
               </div>
             </div>
           )}

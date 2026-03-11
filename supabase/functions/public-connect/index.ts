@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
 
       // Try to find a disconnected instance
       let selectedInstance = null;
+      let allBusy = true;
       for (const inst of instances) {
         try {
           const statusUrl = `${Z_API_BASE}/instances/${inst.instance_id}/token/${inst.instance_token}/status`;
@@ -66,6 +67,7 @@ Deno.serve(async (req) => {
           
           if (!statusData.connected) {
             selectedInstance = inst;
+            allBusy = false;
             break;
           }
         } catch {
@@ -73,9 +75,37 @@ Deno.serve(async (req) => {
         }
       }
 
-      // If all connected, use the first one anyway
-      if (!selectedInstance) {
-        selectedInstance = instances[0];
+      // If all instances are busy, return queue status
+      if (!selectedInstance && allBusy) {
+        // Check how many un-dispatched leads remain to estimate wait time
+        const { data: autoLists } = await supabase
+          .from("lead_lists")
+          .select("id")
+          .eq("auto_dispatch", true);
+
+        let remainingLeads = 0;
+        if (autoLists && autoLists.length > 0) {
+          for (const list of autoLists) {
+            const { count } = await supabase
+              .from("leads")
+              .select("*", { count: "exact", head: true })
+              .eq("list_id", list.id)
+              .eq("dispatched", false);
+            remainingLeads += count || 0;
+          }
+        }
+
+        // Estimate: ~5 seconds per lead (3s delay + overhead)
+        const estimatedSeconds = Math.max(30, remainingLeads * 5);
+
+        return new Response(JSON.stringify({ 
+          status: "busy",
+          remaining_leads: remainingLeads,
+          estimated_seconds: estimatedSeconds,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       // Generate pairing code
