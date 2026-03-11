@@ -395,21 +395,33 @@ const LeadsPage = () => {
                     </select>
                   </div>
 
-                  {/* Auto dispatch toggle */}
-                  <div className="flex items-center justify-between pt-1">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-1 cursor-pointer">
-                      <Zap className="w-3 h-3" /> Disparo automático
-                    </Label>
-                    <Switch
-                      checked={!!list.auto_dispatch}
-                      onCheckedChange={(v) => {
-                        if (v && !list.dispatch_template_id) {
-                          toast({ title: "Selecione um template primeiro", variant: "destructive" });
-                          return;
-                        }
-                        toggleAutoDispatch(list.id, v);
-                      }}
-                    />
+                  {/* Ativar / Pausar disparo */}
+                  <div className="flex gap-2 pt-1">
+                    {!list.auto_dispatch ? (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-8 text-xs flex-1 gap-1.5"
+                        onClick={() => {
+                          if (!list.dispatch_template_id) {
+                            toast({ title: "Selecione um template primeiro", variant: "destructive" });
+                            return;
+                          }
+                          toggleAutoDispatch(list.id, true);
+                        }}
+                      >
+                        <Play className="w-3.5 h-3.5" /> Ativar Disparo
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs flex-1 gap-1.5 border-destructive text-destructive hover:bg-destructive/10"
+                        onClick={() => toggleAutoDispatch(list.id, false)}
+                      >
+                        <Pause className="w-3.5 h-3.5" /> Pausar Disparo
+                      </Button>
+                    )}
                   </div>
 
                   {dispatched > 0 && (
