@@ -29,6 +29,7 @@ interface Disparo {
   id: string; instance_name: string; template_id: string | null; list_id: string | null;
   status: string; total: number; sent: number; failed: number;
   started_at: string; finished_at: string | null; z_api_instance_id: string | null;
+  phone_number?: string;
 }
 
 const DisparosPage = () => {
@@ -250,6 +251,9 @@ const DisparosPage = () => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground truncate">{d.instance_name}</span>
+            {d.phone_number && (
+              <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono">📱 {d.phone_number}</span>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
             <span className="text-xs text-muted-foreground flex items-center gap-1">

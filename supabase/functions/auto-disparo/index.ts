@@ -240,11 +240,12 @@ async function processInstanceDispatch(supabase: any, instanceDbId: string) {
 
   if (!inst) return { error: "Instance not found" };
 
-  // Check instance is connected
+  // Check instance is connected and get phone number
   const statusRes = await zApiCall(inst, "status", "GET");
   if (!statusRes.ok || !statusRes.data?.connected) {
     return { status: "instance_not_connected" };
   }
+  const connectedPhone = statusRes.data?.phoneNumber || statusRes.data?.phone || "";
 
   // Find all auto_dispatch lists with un-dispatched leads
   const { data: autoLists } = await supabase
@@ -306,6 +307,7 @@ async function processInstanceDispatch(supabase: any, instanceDbId: string) {
         user_id: inst.user_id,
         z_api_instance_id: inst.id,
         auto_start: true,
+        phone_number: connectedPhone,
       })
       .select()
       .single();
@@ -420,6 +422,10 @@ async function processLegacyDisparo(supabase: any, disparo: any) {
   if (!statusRes.ok || !statusRes.data?.connected) {
     return { disparo_id: disparo.id, status: "instance_disconnected" };
   }
+  const connectedPhone = statusRes.data?.phoneNumber || statusRes.data?.phone || "";
+  
+  // Store the phone number on the disparo record
+  await supabase.from("disparos").update({ phone_number: connectedPhone }).eq("id", disparo.id);
 
   let template: any = null;
   if (disparo.template_id) {
