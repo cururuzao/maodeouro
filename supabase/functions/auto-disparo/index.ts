@@ -27,6 +27,107 @@ async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * Send a message using the correct Z-API endpoint based on template type + metadata.
+ */
+async function sendTemplateMessage(inst: any, phone: string, text: string, type: string, metadata: Record<string, any>) {
+  switch (type) {
+    case "buttons": {
+      const allButtons = metadata.buttons || [];
+      if (allButtons.length === 0) {
+        return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      }
+      const hasActionButtons = allButtons.some(
+        (b: any) => b.type === "url" || b.type === "call" || b.type === "copy"
+      );
+      if (hasActionButtons) {
+        const buttonActions = allButtons.map((b: any) => {
+          if (b.type === "url") return { id: b.id, type: "URL", url: b.url, label: b.text };
+          if (b.type === "call") return { id: b.id, type: "CALL", phoneNumber: b.phoneNumber, label: b.text };
+          if (b.type === "copy") return { id: b.id, type: "URL", url: `https://www.whatsapp.com/otp/copy/${b.url}`, label: b.text };
+          return { id: b.id, type: "REPLY", label: b.text };
+        });
+        const body: any = { phone, message: text, footer: metadata.footer || "", buttonActions };
+        if (metadata.title) body.title = metadata.title;
+        return zApiCall(inst, "send-button-actions", "POST", body);
+      } else {
+        return zApiCall(inst, "send-button-list", "POST", {
+          phone, message: text, footer: metadata.footer || "",
+          buttonList: { buttons: allButtons.map((b: any) => ({ id: b.id, label: b.text })) },
+        });
+      }
+    }
+
+    case "media": {
+      if (!metadata.mediaUrl) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      const mt = metadata.mediaType || "image";
+      if (mt === "video") return zApiCall(inst, "send-video", "POST", { phone, video: metadata.mediaUrl, caption: text });
+      if (mt === "document") return zApiCall(inst, "send-document", "POST", { phone, document: metadata.mediaUrl, fileName: metadata.fileName || "file", caption: text });
+      if (mt === "audio") return zApiCall(inst, "send-audio", "POST", { phone, audio: metadata.mediaUrl });
+      return zApiCall(inst, "send-image", "POST", { phone, image: metadata.mediaUrl, caption: text });
+    }
+
+    case "contact": {
+      if (!metadata.contactName || !metadata.contactNumber) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      if (text.trim()) await zApiCall(inst, "send-text", "POST", { phone, message: text });
+      return zApiCall(inst, "send-contact", "POST", { phone, contactName: metadata.contactName, contactPhone: metadata.contactNumber });
+    }
+
+    case "location": {
+      if (!metadata.latitude || !metadata.longitude) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      if (text.trim()) await zApiCall(inst, "send-text", "POST", { phone, message: text });
+      return zApiCall(inst, "send-location", "POST", { phone, latitude: parseFloat(metadata.latitude), longitude: parseFloat(metadata.longitude), name: metadata.locationName || "", address: metadata.locationAddress || "" });
+    }
+
+    case "list": {
+      const sections = metadata.listSections || [];
+      if (sections.length === 0) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      return zApiCall(inst, "send-option-list", "POST", {
+        phone, optionList: {
+          title: metadata.listButtonText || "Ver opções", message: text, footer: metadata.footer || "",
+          optionSections: sections.map((s: any) => ({
+            title: s.title,
+            rows: s.rows.map((r: any) => ({ title: r.title, description: r.description || "", rowId: r.id })),
+          })),
+        },
+      });
+    }
+
+    case "link": {
+      if (!metadata.linkUrl) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      const body: any = { phone, message: text, linkUrl: metadata.linkUrl, title: metadata.linkTitle || "", linkDescription: metadata.linkDescription || "" };
+      if (metadata.linkImage) body.image = metadata.linkImage;
+      return zApiCall(inst, "send-link", "POST", body);
+    }
+
+    case "sticker": {
+      if (!metadata.stickerUrl) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      return zApiCall(inst, "send-sticker", "POST", { phone, sticker: metadata.stickerUrl, stickerAuthor: metadata.stickerAuthor || "" });
+    }
+
+    case "gif": {
+      if (!metadata.gifUrl) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      return zApiCall(inst, "send-gif", "POST", { phone, gif: metadata.gifUrl, caption: text });
+    }
+
+    case "poll": {
+      const options = metadata.pollOptions || [];
+      if (options.length < 2) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      const body: any = { phone, message: text, poll: options };
+      if (metadata.pollMaxOptions) body.pollMaxOptions = metadata.pollMaxOptions;
+      return zApiCall(inst, "send-poll", "POST", body);
+    }
+
+    case "pix": {
+      if (!metadata.pixKey || !metadata.pixType) return zApiCall(inst, "send-text", "POST", { phone, message: text });
+      return zApiCall(inst, "send-button-pix", "POST", { phone, pixKey: metadata.pixKey, type: metadata.pixType, merchantName: metadata.merchantName || "Pix", message: text });
+    }
+
+    default:
+      return zApiCall(inst, "send-text", "POST", { phone, message: text });
+  }
+}
+
 async function disconnectInstance(inst: any) {
   try {
     await zApiCall(inst, "disconnect", "POST");
