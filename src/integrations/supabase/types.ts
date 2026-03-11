@@ -116,31 +116,47 @@ export type Database = {
       }
       lead_lists: {
         Row: {
+          auto_dispatch: boolean
           created_at: string
           description: string | null
+          dispatch_template_id: string | null
           id: string
           name: string
           user_id: string | null
         }
         Insert: {
+          auto_dispatch?: boolean
           created_at?: string
           description?: string | null
+          dispatch_template_id?: string | null
           id?: string
           name: string
           user_id?: string | null
         }
         Update: {
+          auto_dispatch?: boolean
           created_at?: string
           description?: string | null
+          dispatch_template_id?: string | null
           id?: string
           name?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lead_lists_dispatch_template_id_fkey"
+            columns: ["dispatch_template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leads: {
         Row: {
           created_at: string
+          dispatched: boolean
+          dispatched_at: string | null
           extra_data: Json | null
           id: string
           list_id: string
@@ -149,6 +165,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dispatched?: boolean
+          dispatched_at?: string | null
           extra_data?: Json | null
           id?: string
           list_id: string
@@ -157,6 +175,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dispatched?: boolean
+          dispatched_at?: string | null
           extra_data?: Json | null
           id?: string
           list_id?: string
@@ -345,8 +365,10 @@ export type Database = {
       admin_get_all_lead_lists: {
         Args: never
         Returns: {
+          auto_dispatch: boolean
           created_at: string
           description: string | null
+          dispatch_template_id: string | null
           id: string
           name: string
           user_id: string | null
