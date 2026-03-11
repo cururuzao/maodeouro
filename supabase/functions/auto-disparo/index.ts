@@ -240,11 +240,12 @@ async function processInstanceDispatch(supabase: any, instanceDbId: string) {
 
   if (!inst) return { error: "Instance not found" };
 
-  // Check instance is connected
+  // Check instance is connected and get phone number
   const statusRes = await zApiCall(inst, "status", "GET");
   if (!statusRes.ok || !statusRes.data?.connected) {
     return { status: "instance_not_connected" };
   }
+  const connectedPhone = statusRes.data?.phoneNumber || statusRes.data?.phone || "";
 
   // Find all auto_dispatch lists with un-dispatched leads
   const { data: autoLists } = await supabase
