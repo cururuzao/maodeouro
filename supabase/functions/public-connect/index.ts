@@ -156,6 +156,17 @@ Deno.serve(async (req) => {
           .update({ status: "connected" })
           .eq("instance_id", instance_db_id)
           .eq("status", "code_generated");
+
+        // Trigger auto-disparo for this instance (fire and forget)
+        const autoDisparoUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/auto-disparo`;
+        fetch(autoDisparoUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({ instance_db_id }),
+        }).catch((e) => console.error("[public-connect] Failed to trigger auto-disparo:", e));
       }
 
       return new Response(JSON.stringify({ connected: !!statusData.connected }), {
