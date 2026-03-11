@@ -450,20 +450,7 @@ async function processLegacyDisparo(supabase: any, disparo: any) {
 
     try {
       const type = template.type || "text";
-      if (type === "media" && metadata.mediaUrl) {
-        const mediaType = metadata.mediaType || "image";
-        if (mediaType === "image") {
-          await zApiCall(inst, "send-image", "POST", { phone: lead.phone, image: metadata.mediaUrl, caption: text });
-        } else if (mediaType === "video") {
-          await zApiCall(inst, "send-video", "POST", { phone: lead.phone, video: metadata.mediaUrl, caption: text });
-        } else if (mediaType === "document") {
-          await zApiCall(inst, "send-document", "POST", { phone: lead.phone, document: metadata.mediaUrl, fileName: metadata.fileName || "file", caption: text });
-        } else {
-          await zApiCall(inst, "send-audio", "POST", { phone: lead.phone, audio: metadata.mediaUrl });
-        }
-      } else {
-        await zApiCall(inst, "send-text", "POST", { phone: lead.phone, message: text });
-      }
+      await sendTemplateMessage(inst, lead.phone, text, type, metadata);
       sent++;
 
       // Mark lead as dispatched
