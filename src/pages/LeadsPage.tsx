@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2, Zap, FileText } from "lucide-react";
+import { Users, Plus, Upload, ClipboardPaste, ArrowLeft, Trash2, Loader2, Zap, FileText, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +39,11 @@ const LeadsPage = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   const fetchLists = async () => {
     setLoading(true);
@@ -150,6 +155,35 @@ const LeadsPage = () => {
     }
     toast({ title: "Lista excluída" });
     fetchLists();
+  };
+
+  const startEditing = (list: LeadList) => {
+    setEditingId(list.id);
+    setEditName(list.name);
+    setEditDescription(list.description || "");
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditDescription("");
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editName.trim()) return;
+    const { error } = await supabase
+      .from("lead_lists")
+      .update({ name: editName.trim(), description: editDescription.trim() })
+      .eq("id", editingId);
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+      return;
+    }
+    setLists((prev) =>
+      prev.map((l) => l.id === editingId ? { ...l, name: editName.trim(), description: editDescription.trim() } : l)
+    );
+    toast({ title: "Lista atualizada ✓" });
+    cancelEditing();
   };
 
   const toggleAutoDispatch = async (listId: string, enabled: boolean) => {
@@ -288,14 +322,54 @@ const LeadsPage = () => {
               const total = list.lead_count || 0;
               const dispatched = list.dispatched_count || 0;
               const pct = total > 0 ? (dispatched / total) * 100 : 0;
+              const isEditing = editingId === list.id;
 
               return (
                 <div key={list.id} className="bg-card border border-border rounded-xl p-5 group relative space-y-3">
-                  <button onClick={() => handleDelete(list.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  <h3 className="font-semibold text-foreground text-sm">{list.name}</h3>
-                  <p className="text-xs text-muted-foreground">{list.description || "Sem descrição"}</p>
+                  {/* Action buttons */}
+                  <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {!isEditing && (
+                      <>
+                        <button onClick={() => startEditing(list)} className="text-muted-foreground hover:text-foreground p-1">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(list.id)} className="text-muted-foreground hover:text-destructive p-1">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Name & Description - editable */}
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="h-8 text-sm bg-secondary border-border"
+                        autoFocus
+                      />
+                      <Input
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        placeholder="Descrição"
+                        className="h-8 text-xs bg-secondary border-border"
+                      />
+                      <div className="flex gap-1.5">
+                        <Button size="sm" variant="default" className="h-7 text-xs px-3" onClick={saveEdit}>
+                          <Check className="w-3 h-3 mr-1" /> Salvar
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs px-3" onClick={cancelEditing}>
+                          <X className="w-3 h-3 mr-1" /> Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="font-semibold text-foreground text-sm">{list.name}</h3>
+                      <p className="text-xs text-muted-foreground">{list.description || "Sem descrição"}</p>
+                    </>
+                  )}
 
                   {/* Dispatched counter */}
                   <div className="space-y-1.5">
