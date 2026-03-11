@@ -251,6 +251,9 @@ const DisparosPage = () => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-foreground truncate">{d.instance_name}</span>
+            {d.phone_number && (
+              <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono">📱 {d.phone_number}</span>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
             <span className="text-xs text-muted-foreground flex items-center gap-1">

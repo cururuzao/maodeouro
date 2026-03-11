@@ -307,6 +307,7 @@ async function processInstanceDispatch(supabase: any, instanceDbId: string) {
         user_id: inst.user_id,
         z_api_instance_id: inst.id,
         auto_start: true,
+        phone_number: connectedPhone,
       })
       .select()
       .single();
