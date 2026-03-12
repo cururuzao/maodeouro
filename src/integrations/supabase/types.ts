@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_financials: {
+        Row: {
+          ad_spend: number
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          revenue: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_spend?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          revenue?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_spend?: number
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          revenue?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       disparos: {
         Row: {
           auto_start: boolean
