@@ -32,6 +32,7 @@ const VARIABLES = [
   { tag: "{{telefone}}", label: "Telefone", sample: "5511999999999" },
   { tag: "{{email}}", label: "Email", sample: "joao@email.com" },
   { tag: "{{empresa}}", label: "Empresa", sample: "Acme Ltda" },
+  { tag: "{{cpf}}", label: "CPF", sample: "123.456.789-00" },
   { tag: "{{data}}", label: "Data", sample: new Date().toLocaleDateString("pt-BR") },
   { tag: "{{hora}}", label: "Hora", sample: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) },
 ];
