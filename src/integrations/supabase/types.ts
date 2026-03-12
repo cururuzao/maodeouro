@@ -17,8 +17,10 @@ export type Database = {
       ad_financials: {
         Row: {
           ad_spend: number
+          ad_spend_brl: number | null
           created_at: string
           date: string
+          exchange_rate: number | null
           id: string
           notes: string | null
           revenue: number
@@ -27,8 +29,10 @@ export type Database = {
         }
         Insert: {
           ad_spend?: number
+          ad_spend_brl?: number | null
           created_at?: string
           date?: string
+          exchange_rate?: number | null
           id?: string
           notes?: string | null
           revenue?: number
@@ -37,8 +41,10 @@ export type Database = {
         }
         Update: {
           ad_spend?: number
+          ad_spend_brl?: number | null
           created_at?: string
           date?: string
+          exchange_rate?: number | null
           id?: string
           notes?: string | null
           revenue?: number
