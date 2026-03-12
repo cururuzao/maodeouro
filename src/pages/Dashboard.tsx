@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { Send, TrendingUp, RefreshCw, Wifi, Users, ArrowUpRight, ArrowDownRight, Clock, DollarSign, PiggyBank, Target, BarChart3, Plus, Save, CalendarDays } from "lucide-react";
+import { Send, TrendingUp, RefreshCw, Wifi, Users, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import DashboardLayout from "@/components/DashboardLayout";
+import FinancialSection from "@/components/FinancialSection";
 import { supabase } from "@/integrations/supabase/client";
 import { listInstances, getStatus, type ZApiInstance } from "@/lib/z-api";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
