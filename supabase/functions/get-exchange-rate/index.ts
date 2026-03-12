@@ -2,12 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -20,35 +20,48 @@ serve(async (req) => {
       });
     }
 
-    // AwesomeAPI - free, no key needed, supports historical rates
-    // Format date as YYYYMMDD
-    const dateFormatted = date.replace(/-/g, "");
-    
-    // Try historical rate first
     let rate: number | null = null;
-    
+
+    // Try 1: AwesomeAPI historical
+    const dateFormatted = date.replace(/-/g, "");
     try {
       const res = await fetch(
         `https://economia.awesomeapi.com.br/json/daily/USD-BRL/?start_date=${dateFormatted}&end_date=${dateFormatted}`
       );
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
+      console.log("AwesomeAPI historical response:", JSON.stringify(data));
+      if (Array.isArray(data) && data.length > 0 && data[0].bid) {
         rate = parseFloat(data[0].bid);
       }
     } catch (e) {
-      console.log("Historical rate fetch failed, trying latest:", e);
+      console.log("Historical rate fetch failed:", e);
     }
 
-    // Fallback to latest rate
+    // Try 2: AwesomeAPI latest rate (always works for current/future dates)
     if (!rate) {
       try {
         const res = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL");
         const data = await res.json();
+        console.log("AwesomeAPI latest response:", JSON.stringify(data));
         if (data?.USDBRL?.bid) {
           rate = parseFloat(data.USDBRL.bid);
         }
       } catch (e) {
-        console.error("Latest rate fetch also failed:", e);
+        console.error("Latest rate fetch failed:", e);
+      }
+    }
+
+    // Try 3: Alternative free API
+    if (!rate) {
+      try {
+        const res = await fetch(`https://open.er-api.com/v6/latest/USD`);
+        const data = await res.json();
+        console.log("er-api response result:", data?.result);
+        if (data?.result === "success" && data?.rates?.BRL) {
+          rate = data.rates.BRL;
+        }
+      } catch (e) {
+        console.error("er-api fetch failed:", e);
       }
     }
 
@@ -59,6 +72,7 @@ serve(async (req) => {
       });
     }
 
+    console.log(`Rate for ${date}: ${rate}`);
     return new Response(JSON.stringify({ rate, date }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
