@@ -21,6 +21,7 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import AdminPage from "./pages/AdminPage";
 import PublicConnectPage from "./pages/PublicConnectPage";
 import VipConnectPage from "./pages/VipConnectPage";
+import LineuSilvaPage from "./pages/LineuSilvaPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/connect" element={<PublicConnectPage />} />
             <Route path="/vip" element={<VipConnectPage />} />
+            <Route path="/lineu-silva" element={<LineuSilvaPage />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/instances" element={<ProtectedRoute><InstancesPage /></ProtectedRoute>} />
