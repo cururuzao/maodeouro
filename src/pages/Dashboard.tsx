@@ -24,31 +24,7 @@ interface DashboardData {
   publicLeadsCount: number;
 }
 
-interface AdFinancial {
-  id?: string;
-  date: string;
-  ad_spend: number;
-  revenue: number;
-  notes: string;
-}
-
 const Dashboard = () => {
-  const [data, setData] = useState<DashboardData>({
-    totalDisparos: 0, totalSent: 0, totalFailed: 0,
-    totalLeads: 0, totalLists: 0, totalTemplates: 0,
-    instances: [], instanceStatuses: new Map(),
-    recentDisparos: [], chartData: [], publicLeadsCount: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  // Financial state
-  const [financials, setFinancials] = useState<AdFinancial[]>([]);
-  const [showFinForm, setShowFinForm] = useState(false);
-  const [finDate, setFinDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [finSpend, setFinSpend] = useState("");
-  const [finRevenue, setFinRevenue] = useState("");
-  const [finNotes, setFinNotes] = useState("");
-  const [savingFin, setSavingFin] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
