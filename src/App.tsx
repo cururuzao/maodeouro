@@ -20,6 +20,7 @@ import ConectarPage from "./pages/ConectarPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import AdminPage from "./pages/AdminPage";
 import PublicConnectPage from "./pages/PublicConnectPage";
+import VipConnectPage from "./pages/VipConnectPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
