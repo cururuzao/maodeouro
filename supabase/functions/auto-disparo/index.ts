@@ -343,6 +343,7 @@ async function processInstanceDispatch(supabase: any, instanceDbId: string) {
         .replace(/\{\{telefone\}\}/gi, lead.phone || "")
         .replace(/\{\{email\}\}/gi, extra.email || "")
         .replace(/\{\{empresa\}\}/gi, extra.empresa || "")
+        .replace(/\{\{cpf\}\}/gi, extra.cpf || "")
         .replace(/\{\{data\}\}/gi, new Date().toLocaleDateString("pt-BR"))
         .replace(/\{\{hora\}\}/gi, new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
 
