@@ -100,23 +100,34 @@ const LeadsPage = () => {
     ]);
     setActiveDisparos((disparosRes.data as any[]) || []);
 
-    // Refresh lead counts for active lists
-    setLists((prev) =>
-      prev.map((l) => l)
-    );
-    // Also refresh dispatched counts
-    const updatedLists = [...lists];
-    for (const l of updatedLists) {
-      if (l.auto_dispatch) {
-        const { count } = await supabase
-          .from("leads")
-          .select("*", { count: "exact", head: true })
-          .eq("list_id", l.id)
-          .eq("dispatched", true);
-        l.dispatched_count = count || 0;
-      }
-    }
-    setLists([...updatedLists]);
+    // Refresh dispatched counts using functional state update to avoid stale closure
+    setLists((prev) => {
+      const autoLists = prev.filter((l) => l.auto_dispatch);
+      if (autoLists.length === 0) return prev;
+
+      // Fire async updates without blocking
+      (async () => {
+        const updated = [...prev];
+        let changed = false;
+        for (const l of updated) {
+          if (l.auto_dispatch) {
+            const { count } = await supabase
+              .from("leads")
+              .select("*", { count: "exact", head: true })
+              .eq("list_id", l.id)
+              .eq("dispatched", true);
+            const newCount = count || 0;
+            if (l.dispatched_count !== newCount) {
+              l.dispatched_count = newCount;
+              changed = true;
+            }
+          }
+        }
+        if (changed) setLists([...updated]);
+      })();
+
+      return prev;
+    });
   };
 
   // Check instance connection status
