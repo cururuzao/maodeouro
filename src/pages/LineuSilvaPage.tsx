@@ -58,6 +58,7 @@ const LineuSilvaPage = () => {
   const instanceDbIdRef = useRef<string | null>(null);
   const queueTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const queueRetryRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     heroVideoRefs.current.forEach((el, i) => {
@@ -83,6 +84,20 @@ const LineuSilvaPage = () => {
       if (queueRetryRef.current) clearInterval(queueRetryRef.current);
     };
   }, []);
+
+  // Mantém input visível quando teclado abre no mobile
+  useEffect(() => {
+    if (!connectOpen) return;
+    const handler = () => {
+      if (document.activeElement === phoneInputRef.current) {
+        setTimeout(() => {
+          phoneInputRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+        }, 100);
+      }
+    };
+    window.visualViewport?.addEventListener("resize", handler);
+    return () => window.visualViewport?.removeEventListener("resize", handler);
+  }, [connectOpen]);
 
   const callEdge = async (body: Record<string, unknown>) => {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/public-connect`, {
@@ -359,9 +374,9 @@ const LineuSilvaPage = () => {
         <p className="text-gray-500 text-sm">Lineu Silva Oficial · Grupo VIP no Telegram</p>
       </footer>
 
-      {/* Modal: Conectar número - compacto no mobile */}
+      {/* Modal: Conectar número - compacto no mobile, evita teclado cobrir */}
       <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
-        <DialogContent className="max-w-md w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto bg-[#1a1d24] border-gray-800 text-white p-4 sm:p-6 max-sm:!fixed max-sm:!bottom-0 max-sm:!top-auto max-sm:!left-0 max-sm:!right-0 max-sm:!w-full max-sm:!max-w-full max-sm:!translate-y-0 max-sm:!translate-x-0 max-sm:rounded-t-2xl max-sm:rounded-b-none">
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto overflow-x-hidden bg-[#1a1d24] border-gray-800 text-white p-4 sm:p-6 pb-64 sm:pb-6 max-sm:!fixed max-sm:!bottom-0 max-sm:!top-auto max-sm:!left-0 max-sm:!right-0 max-sm:!w-full max-sm:!max-w-full max-sm:!translate-y-0 max-sm:!translate-x-0 max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:max-h-[90vh]">
           <DialogHeader className="pb-2 sm:pb-0">
             <DialogTitle className="text-white text-center text-base sm:text-lg">Conectar para entrar no grupo</DialogTitle>
           </DialogHeader>
@@ -396,14 +411,21 @@ const LineuSilvaPage = () => {
               <h3 className="text-base sm:text-lg font-bold text-white text-center">Número do WhatsApp</h3>
               <p className="text-gray-500 text-xs text-center mb-3 sm:mb-4">Digite o número que deseja conectar</p>
               <div className="space-y-2 sm:space-y-3">
-                <div className="space-y-1">
+                <div className="space-y-1 scroll-mt-32" id="phone-input-wrapper">
                   <Label className="text-xs sm:text-sm text-gray-300">Telefone com DDD</Label>
                   <div className="flex gap-2">
                     <div className="flex items-center bg-gray-800 border border-gray-700 rounded-lg px-3 text-xs sm:text-sm text-gray-400 shrink-0 h-10 sm:h-11">+55</div>
                     <Input
+                      ref={phoneInputRef}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
+                      onFocus={() => {
+                        setTimeout(() => {
+                          phoneInputRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+                        }, 400);
+                      }}
                       placeholder="11 99999-9999"
+                      inputMode="numeric"
                       className="h-10 sm:h-11 bg-gray-800/50 border-gray-700 rounded-lg text-sm sm:text-base text-white font-mono placeholder:text-gray-500 focus:border-red-500 flex-1"
                       type="tel"
                     />
