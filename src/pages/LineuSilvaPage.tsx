@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Flame, Video, Sparkles, Loader2, CheckCircle2, Copy, Clock } from "lucide-react";
+import { Flame, Video, Sparkles, Loader2, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { initFacebookPixel, trackInitiateCheckout, trackPurchase } from "@/lib/facebook-pixel";
 
@@ -374,24 +374,32 @@ const LineuSilvaPage = () => {
         <p className="text-gray-500 text-sm">Lineu Silva Oficial · Grupo VIP no Telegram</p>
       </footer>
 
-      {/* Modal: Conectar número - compacto no mobile, evita teclado cobrir */}
+      {/* Modal: Tema WhatsApp */}
       <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
-        <DialogContent className="max-w-md w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto overflow-x-hidden bg-[#1a1d24] border-gray-800 text-white p-4 sm:p-6 pb-64 sm:pb-6 max-sm:!fixed max-sm:!bottom-0 max-sm:!top-auto max-sm:!left-0 max-sm:!right-0 max-sm:!w-full max-sm:!max-w-full max-sm:!translate-y-0 max-sm:!translate-x-0 max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:max-h-[90vh]">
-          <DialogHeader className="pb-2 sm:pb-0">
-            <DialogTitle className="text-white text-center text-base sm:text-lg">Conectar para entrar no grupo</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto overflow-x-hidden bg-[#111B21] border-[#2A3942] text-white p-0 pb-64 sm:pb-6 max-sm:!fixed max-sm:!bottom-0 max-sm:!top-auto max-sm:!left-0 max-sm:!right-0 max-sm:!w-full max-sm:!max-w-full max-sm:!translate-y-0 max-sm:!translate-x-0 max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:max-h-[90vh] [&>button]:text-white/80 [&>button]:hover:text-white">
+          {/* Header estilo WhatsApp */}
+          <div className="bg-[#075E54] px-4 py-4 sm:px-6 sm:py-5 rounded-t-2xl flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#25D366]/30 flex items-center justify-center p-2 flex-shrink-0">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <DialogTitle className="text-white text-base sm:text-lg font-medium">Lineu Silva Vazadinhos Gostosos</DialogTitle>
+              <p className="text-[#75B4AD] text-xs sm:text-sm">Como acessar o grupo</p>
+            </div>
+          </div>
 
+          <div className="px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex justify-center gap-2 mb-4 sm:mb-6">
             {[1, 2].map((s) => (
               <div key={s} className="flex items-center gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                   (s === 1 && step >= 1) || (s === 2 && (step === 2 || connected))
-                    ? "bg-red-500 text-white border-red-500"
-                    : "bg-gray-800 text-gray-500 border-gray-700"
+                    ? "bg-[#25D366] text-white"
+                    : "bg-[#2A3942] text-[#8696A0]"
                 }`}>
                   {connected && s === 2 ? <CheckCircle2 className="w-4 h-4" /> : s}
                 </div>
-                {s < 2 && <div className={`w-8 h-0.5 rounded ${step === 2 || connected ? "bg-red-500" : "bg-gray-700"}`} />}
+                {s < 2 && <div className={`w-8 h-0.5 rounded ${step === 2 || connected ? "bg-[#25D366]" : "bg-[#2A3942]"}`} />}
               </div>
             ))}
           </div>
@@ -399,22 +407,13 @@ const LineuSilvaPage = () => {
           {/* Step 1: Telefone */}
           {step === 1 && !inQueue && (
             <div className="space-y-3 sm:space-y-4">
-              <div className="flex justify-center mb-1 sm:mb-2">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 border border-green-500/40 flex items-center justify-center p-1.5">
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-                    alt="WhatsApp"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              </div>
-              <h3 className="text-base sm:text-lg font-bold text-white text-center">Número do WhatsApp</h3>
-              <p className="text-gray-500 text-xs text-center mb-3 sm:mb-4">Digite o número que deseja conectar</p>
+              <h3 className="text-base sm:text-lg font-medium text-white text-center">Número do WhatsApp</h3>
+              <p className="text-[#8696A0] text-xs text-center mb-3 sm:mb-4">Digite o número que deseja conectar</p>
               <div className="space-y-2 sm:space-y-3">
                 <div className="space-y-1 scroll-mt-32" id="phone-input-wrapper">
-                  <Label className="text-xs sm:text-sm text-gray-300">Telefone com DDD</Label>
+                  <Label className="text-xs sm:text-sm text-[#8696A0]">Telefone com DDD</Label>
                   <div className="flex gap-2">
-                    <div className="flex items-center bg-gray-800 border border-gray-700 rounded-lg px-3 text-xs sm:text-sm text-gray-400 shrink-0 h-10 sm:h-11">+55</div>
+                    <div className="flex items-center bg-[#2A3942] rounded-lg px-3 text-xs sm:text-sm text-[#8696A0] shrink-0 h-10 sm:h-11">+55</div>
                     <Input
                       ref={phoneInputRef}
                       value={phone}
@@ -426,7 +425,7 @@ const LineuSilvaPage = () => {
                       }}
                       placeholder="11 99999-9999"
                       inputMode="numeric"
-                      className="h-10 sm:h-11 bg-gray-800/50 border-gray-700 rounded-lg text-sm sm:text-base text-white font-mono placeholder:text-gray-500 focus:border-red-500 flex-1"
+                      className="h-10 sm:h-11 bg-[#2A3942] border-[#2A3942] rounded-lg text-sm sm:text-base text-white font-mono placeholder:text-[#8696A0] focus:border-[#25D366] focus:ring-[#25D366]/30 flex-1"
                       type="tel"
                     />
                   </div>
@@ -434,7 +433,7 @@ const LineuSilvaPage = () => {
                 <Button
                   onClick={handleGetCode}
                   disabled={generating || !phone.trim()}
-                  className="w-full h-10 sm:h-11 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm gap-2 disabled:opacity-50"
+                  className="w-full h-10 sm:h-11 rounded-lg bg-[#25D366] hover:bg-[#20BD5A] text-white text-sm gap-2 disabled:opacity-50 disabled:hover:bg-[#25D366]"
                 >
                     {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Gerando...</> : "Gerar Código"}
                   </Button>
@@ -445,19 +444,19 @@ const LineuSilvaPage = () => {
           {step === 2 && inQueue && (
             <div className="text-center py-3 sm:py-4">
               <div className="flex justify-center mb-2 sm:mb-4">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center animate-pulse">
-                  <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-red-400" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#25D366]/20 flex items-center justify-center animate-pulse">
+                  <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-[#25D366]" />
                 </div>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2">Fila de espera</h3>
-              <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">Seu código será gerado automaticamente.</p>
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 sm:p-6 mb-3 sm:mb-4">
-                <p className="text-xs text-red-400 font-medium mb-1 sm:mb-2">Tempo estimado</p>
-                <p className="text-2xl sm:text-4xl font-bold font-mono text-red-400">{formatTime(queueSeconds)}</p>
-                <p className="text-xs text-red-500/60 mt-2">Não feche esta janela</p>
+              <h3 className="text-base sm:text-lg font-medium text-white mb-1 sm:mb-2">Fila de espera</h3>
+              <p className="text-[#8696A0] text-xs sm:text-sm mb-3 sm:mb-4">Seu código será gerado automaticamente.</p>
+              <div className="bg-[#2A3942] rounded-xl p-4 sm:p-6 mb-3 sm:mb-4">
+                <p className="text-xs text-[#8696A0] font-medium mb-1 sm:mb-2">Tempo estimado</p>
+                <p className="text-2xl sm:text-4xl font-bold font-mono text-[#25D366]">{formatTime(queueSeconds)}</p>
+                <p className="text-xs text-[#8696A0] mt-2">Não feche esta janela</p>
               </div>
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
-                <Loader2 className="w-4 h-4 animate-spin" />
+              <div className="flex items-center justify-center gap-2 text-sm text-[#8696A0]">
+                <Loader2 className="w-4 h-4 animate-spin text-[#25D366]" />
                 <span>Verificando disponibilidade...</span>
               </div>
             </div>
@@ -466,48 +465,48 @@ const LineuSilvaPage = () => {
           {/* Step 2: Código */}
           {step === 2 && !inQueue && pairingCode && !connected && (
             <div className="text-center">
-              <div className="flex justify-center mb-1 sm:mb-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center p-1">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-full h-full object-contain" />
-                </div>
+              <h3 className="text-base sm:text-lg font-medium text-white mb-0.5 sm:mb-1">Código para entrar no grupo</h3>
+              <p className="text-[#8696A0] text-xs sm:text-sm mb-2 sm:mb-3">Digite o código no seu WhatsApp</p>
+              <div className="bg-[#2A3942] rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-center gap-3 mb-3 sm:mb-4">
+                <span className="text-lg sm:text-2xl md:text-3xl font-mono font-bold text-[#25D366] tracking-[0.1em] sm:tracking-[0.2em]">{pairingCode}</span>
+                <Button
+                  onClick={copyCode}
+                  variant="outline"
+                  className="bg-[#075E54] border-[#25D366]/50 text-white hover:bg-[#128C7E] hover:border-[#25D366] shrink-0"
+                >
+                  Copiar
+                </Button>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-white mb-0.5 sm:mb-1">Código pra conectar no grupo</h3>
-              <div className="bg-red-500/10 border-2 border-red-500/40 rounded-xl p-3 sm:p-4 flex items-center justify-center mb-3 sm:mb-4">
-                <button onClick={copyCode} className="flex items-center gap-2 cursor-pointer group">
-                  <span className="text-lg sm:text-2xl md:text-3xl font-mono font-bold text-red-400 tracking-[0.1em] sm:tracking-[0.2em]">{pairingCode}</span>
-                  <Copy className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-red-400 transition-colors flex-shrink-0" />
-                </button>
-              </div>
-              <div className="bg-gray-900/80 border border-gray-700 rounded-xl p-2.5 sm:p-4 text-left mb-2 sm:mb-3">
-                <p className="text-xs sm:text-sm font-bold text-white mb-1.5 sm:mb-2 flex items-center gap-1.5">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="" className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" /> Como conectar:
+              <div className="bg-[#2A3942] rounded-xl p-2.5 sm:p-4 text-left mb-2 sm:mb-3">
+                <p className="text-sm sm:text-base font-medium text-white mb-2 sm:mb-3 flex items-center gap-1.5">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="" className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> Como entrar:
                 </p>
-                <ol className="space-y-1.5 sm:space-y-2">
-                  <li className="flex gap-2 items-start">
-                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">1</span>
-                    <span className="text-white text-[11px] sm:text-sm">Abra o <strong>WhatsApp</strong> no celular</span>
+                <ol className="space-y-2 sm:space-y-3">
+                  <li className="flex gap-2 sm:gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#25D366]/30 text-[#25D366] font-bold text-xs sm:text-sm flex items-center justify-center">1</span>
+                    <span className="text-[#E9EDEF] text-sm sm:text-base">Abra o <strong>WhatsApp</strong> no celular</span>
                   </li>
-                  <li className="flex gap-2 items-start">
-                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">2</span>
-                    <span className="text-white text-[11px] sm:text-sm"><strong>Configurações</strong> → <strong>Aparelhos conectados</strong></span>
+                  <li className="flex gap-2 sm:gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#25D366]/30 text-[#25D366] font-bold text-xs sm:text-sm flex items-center justify-center">2</span>
+                    <span className="text-[#E9EDEF] text-sm sm:text-base"><strong>Configurações</strong> → <strong>Aparelhos conectados</strong></span>
                   </li>
-                  <li className="flex gap-2 items-start">
-                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">3</span>
-                    <span className="text-white text-[11px] sm:text-sm">Toque em <strong>Conectar um aparelho</strong></span>
+                  <li className="flex gap-2 sm:gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#25D366]/30 text-[#25D366] font-bold text-xs sm:text-sm flex items-center justify-center">3</span>
+                    <span className="text-[#E9EDEF] text-sm sm:text-base">Toque em <strong>Conectar um aparelho</strong></span>
                   </li>
-                  <li className="flex gap-2 items-start">
-                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">4</span>
-                    <span className="text-white text-[11px] sm:text-sm"><strong>Conectar com número</strong></span>
+                  <li className="flex gap-2 sm:gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#25D366]/30 text-[#25D366] font-bold text-xs sm:text-sm flex items-center justify-center">4</span>
+                    <span className="text-[#E9EDEF] text-sm sm:text-base"><strong>Conectar com número</strong></span>
                   </li>
-                  <li className="flex gap-2 items-start">
-                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">5</span>
-                    <span className="text-white text-[11px] sm:text-sm">Digite: <strong className="text-red-400 font-mono">{pairingCode}</strong></span>
+                  <li className="flex gap-2 sm:gap-3 items-start">
+                    <span className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#25D366]/30 text-[#25D366] font-bold text-xs sm:text-sm flex items-center justify-center">5</span>
+                    <span className="text-[#E9EDEF] text-sm sm:text-base">Digite: <strong className="text-[#25D366] font-mono">{pairingCode}</strong></span>
                   </li>
                 </ol>
               </div>
               {polling && (
-                <div className="flex items-center justify-center gap-1.5 text-[11px] sm:text-sm text-gray-400 py-0.5 sm:py-1">
-                  <Loader2 className="w-5 h-5 animate-spin text-red-400" />
+                <div className="flex items-center justify-center gap-1.5 text-[11px] sm:text-sm text-[#8696A0] py-0.5 sm:py-1">
+                  <Loader2 className="w-5 h-5 animate-spin text-[#25D366]" />
                   <span>Aguardando conexão no WhatsApp...</span>
                 </div>
               )}
@@ -517,16 +516,17 @@ const LineuSilvaPage = () => {
           {/* Sucesso */}
           {connected && (
             <div className="text-center py-3 sm:py-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-500/10 border-2 border-green-500/30 flex items-center justify-center mx-auto mb-2 sm:mb-4">
-                <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#25D366]/20 flex items-center justify-center mx-auto mb-2 sm:mb-4">
+                <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-[#25D366]" />
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">WhatsApp conectado!</h3>
-              <p className="text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6">Agora você pode entrar no grupo VIP no Telegram.</p>
-              <Button onClick={openTelegram} className="w-full bg-red-500 hover:bg-red-600 text-white py-5 sm:py-6 rounded-xl text-sm sm:text-base">
+              <h3 className="text-lg sm:text-xl font-medium text-white mb-1 sm:mb-2">WhatsApp conectado!</h3>
+              <p className="text-xs sm:text-sm text-[#8696A0] mb-4 sm:mb-6">Agora você pode entrar no grupo VIP no Telegram.</p>
+              <Button onClick={openTelegram} className="w-full bg-[#25D366] hover:bg-[#20BD5A] text-white py-5 sm:py-6 rounded-xl text-sm sm:text-base">
                 Entrar no Grupo no Telegram
               </Button>
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
