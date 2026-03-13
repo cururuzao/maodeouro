@@ -352,12 +352,13 @@ const LineuSilvaPage = () => {
         <p className="text-center text-green-400 text-sm font-semibold mb-4">
           Esse vídeo é grátis. Todo o conteúdo do grupo também é.
         </p>
-        <div className="rounded-2xl overflow-hidden bg-black border border-gray-800 mb-6 w-full max-w-full max-w-[320px] mx-auto">
+        <div className="rounded-2xl overflow-hidden bg-black border border-gray-800 mb-6 w-full max-w-[320px] mx-auto aspect-[9/16] min-h-[300px]">
           <video
             src={`${CDN_BASE}/ScreenRecording_03-10-202617-22-57_1_0e5f2d03.mp4`}
             controls
-            className="w-full h-auto bg-black"
+            className="w-full h-full object-contain bg-black"
             playsInline
+            preload="metadata"
           />
         </div>
         <p className="text-center text-white/90 text-sm mb-4">
