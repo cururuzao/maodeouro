@@ -377,7 +377,7 @@ const LineuSilvaPage = () => {
 
       {/* Modal: Tema WhatsApp */}
       <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
-        <DialogContent className="max-w-md w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto overflow-x-hidden bg-[#111B21] border-[#2A3942] text-white p-0 pb-64 sm:pb-6 max-sm:!fixed max-sm:!bottom-0 max-sm:!top-auto max-sm:!left-0 max-sm:!right-0 max-sm:!w-full max-sm:!max-w-full max-sm:!translate-y-0 max-sm:!translate-x-0 max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:max-h-[90vh] [&>button]:text-white/80 [&>button]:hover:text-white">
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto overflow-x-hidden bg-[#111B21] border-[#2A3942] text-white p-0 pb-64 sm:pb-6 max-sm:!fixed max-sm:!bottom-8 max-sm:!top-auto max-sm:!left-0 max-sm:!right-0 max-sm:!w-full max-sm:!max-w-full max-sm:!translate-y-0 max-sm:!translate-x-0 max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:max-h-[90vh] [&>button]:text-white/80 [&>button]:hover:text-white">
           {/* Header estilo WhatsApp */}
           <div className="bg-[#075E54] px-4 py-4 sm:px-6 sm:py-5 rounded-t-2xl flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#25D366]/30 flex items-center justify-center p-2 flex-shrink-0">
