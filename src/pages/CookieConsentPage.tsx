@@ -1,8 +1,13 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Cookie } from "lucide-react";
+import { initFacebookPixel } from "@/lib/facebook-pixel";
 
 const CookieConsentPage = () => {
+  useEffect(() => {
+    initFacebookPixel();
+  }, []);
   const navigate = useNavigate();
 
   const handleAceitar = () => {

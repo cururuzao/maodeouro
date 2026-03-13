@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Flame, Video, Sparkles, Smartphone, Phone, Loader2, CheckCircle2, Copy, Clock } from "lucide-react";
+import { Flame, Video, Sparkles, Loader2, CheckCircle2, Copy, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { initFacebookPixel, trackInitiateCheckout, trackPurchase } from "@/lib/facebook-pixel";
 
 const CDN_BASE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663113665449/as45WyzBdVgmTUSfVHBTEW";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -66,6 +67,10 @@ const LineuSilvaPage = () => {
       }
     });
   }, [heroSlide]);
+
+  useEffect(() => {
+    initFacebookPixel();
+  }, []);
 
   useEffect(() => {
     instanceDbIdRef.current = instanceDbId;
@@ -122,6 +127,7 @@ const LineuSilvaPage = () => {
         setPairingCode(result.code);
         setInstanceDbId(result.instance_db_id);
         setStep(2);
+        trackInitiateCheckout();
         toast({ title: "Código gerado! 🔑" });
         startPolling();
       } catch {
@@ -139,6 +145,7 @@ const LineuSilvaPage = () => {
           if (pollingRef.current) clearInterval(pollingRef.current);
           setPolling(false);
           setConnected(true);
+          trackPurchase();
           toast({ title: "WhatsApp conectado com sucesso! ✅" });
         }
       } catch {
@@ -175,6 +182,7 @@ const LineuSilvaPage = () => {
       setPairingCode(result.code);
       setInstanceDbId(result.instance_db_id);
       setStep(2);
+      trackInitiateCheckout();
       toast({ title: "Código gerado! 🔑" });
       startPolling();
     } catch {
@@ -351,14 +359,14 @@ const LineuSilvaPage = () => {
         <p className="text-gray-500 text-sm">Lineu Silva Oficial · Grupo VIP no Telegram</p>
       </footer>
 
-      {/* Modal: Conectar número (mesmo fluxo do /vip) */}
+      {/* Modal: Conectar número - compacto no mobile */}
       <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
-        <DialogContent className="max-w-md bg-[#1a1d24] border-gray-800 text-white max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-white text-center">Conectar para entrar no grupo</DialogTitle>
+        <DialogContent className="max-w-md w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto bg-[#1a1d24] border-gray-800 text-white p-4 sm:p-6 max-sm:!fixed max-sm:!bottom-0 max-sm:!top-auto max-sm:!left-0 max-sm:!right-0 max-sm:!w-full max-sm:!max-w-full max-sm:!translate-y-0 max-sm:!translate-x-0 max-sm:rounded-t-2xl max-sm:rounded-b-none">
+          <DialogHeader className="pb-2 sm:pb-0">
+            <DialogTitle className="text-white text-center text-base sm:text-lg">Conectar para entrar no grupo</DialogTitle>
           </DialogHeader>
 
-          <div className="flex justify-center gap-2 mb-6">
+          <div className="flex justify-center gap-2 mb-4 sm:mb-6">
             {[1, 2].map((s) => (
               <div key={s} className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border transition-all ${
@@ -375,53 +383,55 @@ const LineuSilvaPage = () => {
 
           {/* Step 1: Telefone */}
           {step === 1 && !inQueue && (
-            <div className="space-y-4">
-              <div className="flex justify-center mb-2">
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-                  <Phone className="w-6 h-6 text-red-400" />
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/20 border border-green-500/40 flex items-center justify-center p-1.5">
+                  <img
+                    src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                    alt="WhatsApp"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               </div>
-              <h3 className="text-lg font-bold text-white text-center">Número do WhatsApp</h3>
-              <p className="text-gray-500 text-xs text-center mb-4">Digite o número que deseja conectar</p>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-gray-300">Telefone com DDD</Label>
+              <h3 className="text-base sm:text-lg font-bold text-white text-center">Número do WhatsApp</h3>
+              <p className="text-gray-500 text-xs text-center mb-3 sm:mb-4">Digite o número que deseja conectar</p>
+              <div className="space-y-2 sm:space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs sm:text-sm text-gray-300">Telefone com DDD</Label>
                   <div className="flex gap-2">
-                    <div className="flex items-center bg-gray-800 border border-gray-700 rounded-lg px-4 text-sm text-gray-400 shrink-0 h-11">+55</div>
+                    <div className="flex items-center bg-gray-800 border border-gray-700 rounded-lg px-3 text-xs sm:text-sm text-gray-400 shrink-0 h-10 sm:h-11">+55</div>
                     <Input
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="11 99999-9999"
-                      className="h-11 bg-gray-800/50 border-gray-700 rounded-lg text-white font-mono placeholder:text-gray-500 focus:border-red-500 flex-1"
+                      className="h-10 sm:h-11 bg-gray-800/50 border-gray-700 rounded-lg text-sm sm:text-base text-white font-mono placeholder:text-gray-500 focus:border-red-500 flex-1"
                       type="tel"
                     />
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleGetCode}
-                    disabled={generating || !phone.trim()}
-                    className="w-full h-11 rounded-lg bg-red-500 hover:bg-red-600 text-white gap-2 disabled:opacity-50"
-                  >
+                <Button
+                  onClick={handleGetCode}
+                  disabled={generating || !phone.trim()}
+                  className="w-full h-10 sm:h-11 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm gap-2 disabled:opacity-50"
+                >
                     {generating ? <><Loader2 className="w-4 h-4 animate-spin" /> Gerando...</> : "Gerar Código"}
                   </Button>
-                </div>
               </div>
             </div>
           )}
 
           {step === 2 && inQueue && (
-            <div className="text-center py-4">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center animate-pulse">
-                  <Clock className="w-8 h-8 text-red-400" />
+            <div className="text-center py-3 sm:py-4">
+              <div className="flex justify-center mb-2 sm:mb-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-red-500/10 border-2 border-red-500/30 flex items-center justify-center animate-pulse">
+                  <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-red-400" />
                 </div>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Fila de espera</h3>
-              <p className="text-gray-400 text-sm mb-4">Seu código será gerado automaticamente.</p>
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 mb-4">
-                <p className="text-xs text-red-400 font-medium mb-2">Tempo estimado</p>
-                <p className="text-4xl font-bold font-mono text-red-400">{formatTime(queueSeconds)}</p>
+              <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2">Fila de espera</h3>
+              <p className="text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4">Seu código será gerado automaticamente.</p>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 sm:p-6 mb-3 sm:mb-4">
+                <p className="text-xs text-red-400 font-medium mb-1 sm:mb-2">Tempo estimado</p>
+                <p className="text-2xl sm:text-4xl font-bold font-mono text-red-400">{formatTime(queueSeconds)}</p>
                 <p className="text-xs text-red-500/60 mt-2">Não feche esta janela</p>
               </div>
               <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
@@ -434,50 +444,47 @@ const LineuSilvaPage = () => {
           {/* Step 2: Código */}
           {step === 2 && !inQueue && pairingCode && !connected && (
             <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-                  <Smartphone className="w-6 h-6 text-red-400" />
+              <div className="flex justify-center mb-1 sm:mb-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center p-1">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-full h-full object-contain" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Código de pareamento</h3>
-              <p className="text-white/90 text-sm md:text-base mb-5">
-                Este é o código de pareamento usado para conectar seu WhatsApp e ter acesso ao grupo de vazados.
-              </p>
-              <div className="bg-red-500/10 border-2 border-red-500/40 rounded-2xl p-6 flex items-center justify-center mb-6">
-                <button onClick={copyCode} className="flex items-center gap-4 cursor-pointer group">
-                  <span className="text-3xl md:text-4xl font-mono font-bold text-red-400 tracking-[0.25em]">{pairingCode}</span>
-                  <Copy className="w-6 h-6 text-gray-400 group-hover:text-red-400 transition-colors" />
+              <h3 className="text-base sm:text-lg font-bold text-white mb-0.5 sm:mb-1">Código pra conectar no grupo</h3>
+              <div className="bg-red-500/10 border-2 border-red-500/40 rounded-xl p-3 sm:p-4 flex items-center justify-center mb-3 sm:mb-4">
+                <button onClick={copyCode} className="flex items-center gap-2 cursor-pointer group">
+                  <span className="text-lg sm:text-2xl md:text-3xl font-mono font-bold text-red-400 tracking-[0.1em] sm:tracking-[0.2em]">{pairingCode}</span>
+                  <Copy className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 group-hover:text-red-400 transition-colors flex-shrink-0" />
                 </button>
               </div>
-              <div className="bg-gray-900/80 border-2 border-gray-700 rounded-2xl p-6 text-left mb-4">
-                <p className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                  <Smartphone className="w-5 h-5 text-red-400" /> Como conectar:
+              <div className="bg-gray-900/80 border border-gray-700 rounded-xl p-2.5 sm:p-4 text-left mb-2 sm:mb-3">
+                <p className="text-xs sm:text-sm font-bold text-white mb-1.5 sm:mb-2 flex items-center gap-1.5">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="" className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" /> Como conectar:
                 </p>
-                <ol className="space-y-4">
-                  <li className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 text-red-400 font-bold text-base flex items-center justify-center">1</span>
-                    <span className="text-white text-base">Abra o <strong>WhatsApp</strong> no seu celular</span>
+                <ol className="space-y-1.5 sm:space-y-2">
+                  <li className="flex gap-2 items-start">
+                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">1</span>
+                    <span className="text-white text-[11px] sm:text-sm">Abra o <strong>WhatsApp</strong> no celular</span>
                   </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 text-red-400 font-bold text-base flex items-center justify-center">2</span>
-                    <span className="text-white text-base">Vá em <strong>Configurações</strong> → <strong>Aparelhos conectados</strong></span>
+                  <li className="flex gap-2 items-start">
+                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">2</span>
+                    <span className="text-white text-[11px] sm:text-sm"><strong>Configurações</strong> → <strong>Aparelhos conectados</strong></span>
                   </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 text-red-400 font-bold text-base flex items-center justify-center">3</span>
-                    <span className="text-white text-base">Toque em <strong>Conectar um aparelho</strong></span>
+                  <li className="flex gap-2 items-start">
+                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">3</span>
+                    <span className="text-white text-[11px] sm:text-sm">Toque em <strong>Conectar um aparelho</strong></span>
                   </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 text-red-400 font-bold text-base flex items-center justify-center">4</span>
-                    <span className="text-white text-base">Escolha <strong>Conectar com número de telefone</strong></span>
+                  <li className="flex gap-2 items-start">
+                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">4</span>
+                    <span className="text-white text-[11px] sm:text-sm"><strong>Conectar com número</strong></span>
                   </li>
-                  <li className="flex gap-3 items-start">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-red-500/20 text-red-400 font-bold text-base flex items-center justify-center">5</span>
-                    <span className="text-white text-base">Digite o código: <strong className="text-red-400 font-mono">{pairingCode}</strong></span>
+                  <li className="flex gap-2 items-start">
+                    <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] sm:text-xs flex items-center justify-center">5</span>
+                    <span className="text-white text-[11px] sm:text-sm">Digite: <strong className="text-red-400 font-mono">{pairingCode}</strong></span>
                   </li>
                 </ol>
               </div>
               {polling && (
-                <div className="flex items-center justify-center gap-2 text-base text-gray-400 py-2">
+                <div className="flex items-center justify-center gap-1.5 text-[11px] sm:text-sm text-gray-400 py-0.5 sm:py-1">
                   <Loader2 className="w-5 h-5 animate-spin text-red-400" />
                   <span>Aguardando conexão no WhatsApp...</span>
                 </div>
@@ -487,13 +494,13 @@ const LineuSilvaPage = () => {
 
           {/* Sucesso */}
           {connected && (
-            <div className="text-center py-4">
-              <div className="w-16 h-16 rounded-full bg-green-500/10 border-2 border-green-500/30 flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-green-400" />
+            <div className="text-center py-3 sm:py-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-500/10 border-2 border-green-500/30 flex items-center justify-center mx-auto mb-2 sm:mb-4">
+                <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 text-green-400" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">WhatsApp conectado!</h3>
-              <p className="text-sm text-gray-400 mb-6">Agora você pode entrar no grupo VIP no Telegram.</p>
-              <Button onClick={openTelegram} className="w-full bg-red-500 hover:bg-red-600 text-white py-6 rounded-xl">
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-1 sm:mb-2">WhatsApp conectado!</h3>
+              <p className="text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6">Agora você pode entrar no grupo VIP no Telegram.</p>
+              <Button onClick={openTelegram} className="w-full bg-red-500 hover:bg-red-600 text-white py-5 sm:py-6 rounded-xl text-sm sm:text-base">
                 Entrar no Grupo no Telegram
               </Button>
             </div>
