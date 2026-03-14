@@ -82,12 +82,28 @@ const DisparosPage = () => {
 
   const getDateFilter = () => {
     if (dateRange === "custom" && customStart && customEnd) {
-      return { start: customStart, end: customEnd };
+      const start = new Date(customStart + "T00:00:00").toISOString();
+      const end = new Date(customEnd + "T23:59:59.999").toISOString();
+      return { start, end };
+    }
+    const now = new Date();
+    if (dateRange === "today") {
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      return { start: start.toISOString(), end: now.toISOString() };
+    }
+    if (dateRange === "yesterday") {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      y.setHours(0, 0, 0, 0);
+      const end = new Date(y);
+      end.setHours(23, 59, 59, 999);
+      return { start: y.toISOString(), end: end.toISOString() };
     }
     const days = parseInt(dateRange) || 7;
-    const start = new Date();
+    const start = new Date(now);
     start.setDate(start.getDate() - days);
-    return { start: start.toISOString(), end: new Date().toISOString() };
+    return { start: start.toISOString(), end: now.toISOString() };
   };
 
   const refreshDisparos = async () => {
@@ -181,8 +197,21 @@ const DisparosPage = () => {
       }
       const text = replaceVariables(template.content, lead as any);
       try {
-        await sendTemplateMessage(inst, lead.phone, text, template.type, template.metadata || {});
+        const sendRes = await sendTemplateMessage(inst, lead.phone, text, template.type, template.metadata || {});
         sent++; consecutiveFailures = 0;
+        const zaapId = (sendRes as any)?.zaapId || (sendRes as any)?.messageId || (sendRes as any)?.id;
+        if (zaapId) {
+          await supabase.from("disparo_messages").insert({
+            disparo_id: disparo.id,
+            zaap_id: String(zaapId),
+            phone: lead.phone,
+            instance_id: inst.instance_id,
+          });
+        }
+        await supabase
+          .from("leads")
+          .update({ dispatched: true, dispatched_at: new Date().toISOString() })
+          .eq("id", lead.id);
         try { await muteChat(inst, lead.phone); await new Promise(r => setTimeout(r, 300));
           await archiveChat(inst, lead.phone); await new Promise(r => setTimeout(r, 300));
           await deleteChat(inst, lead.phone); } catch {}
@@ -336,7 +365,8 @@ const DisparosPage = () => {
               onChange={(e) => { setDateRange(e.target.value); }}
               className="h-8 rounded-md bg-secondary border border-border px-2 text-xs text-foreground"
             >
-              <option value="1">Hoje</option>
+              <option value="today">Hoje</option>
+              <option value="yesterday">Ontem</option>
               <option value="3">3 dias</option>
               <option value="7">7 dias</option>
               <option value="30">30 dias</option>

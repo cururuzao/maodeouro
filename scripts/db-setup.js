@@ -10,7 +10,10 @@ import { dirname, join } from 'path';
 import { execSync } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const sql = readFileSync(join(__dirname, '..', 'supabase', 'migrations', '20260312120000_allow_read_public_leads.sql'), 'utf8');
+const migration1 = readFileSync(join(__dirname, '..', 'supabase', 'migrations', '20260312120000_allow_read_public_leads.sql'), 'utf8');
+const migration2 = readFileSync(join(__dirname, '..', 'supabase', 'migrations', '20260312130000_add_delivered_to_disparos.sql'), 'utf8');
+const migration3 = readFileSync(join(__dirname, '..', 'supabase', 'migrations', '20260312140000_disparo_messages.sql'), 'utf8');
+const sql = migration1 + '\n\n-- Migration 2: coluna delivered\n' + migration2 + '\n\n-- Migration 3: disparo_messages\n' + migration3;
 
 const projectId = 'bbfxwizfafnoklhjnyus';
 const sqlEditorUrl = `https://supabase.com/dashboard/project/${projectId}/sql/new`;

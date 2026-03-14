@@ -6,7 +6,7 @@ import FinancialSection from "@/components/FinancialSection";
 import { supabase } from "@/integrations/supabase/client";
 import { listInstances, getStatus, type ZApiInstance } from "@/lib/z-api";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { format, subDays } from "date-fns";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 
 interface DashboardData {
   totalDisparos: number;
@@ -22,7 +22,21 @@ interface DashboardData {
   publicLeadsCount: number;
 }
 
+const getDateFilter = (range: string) => {
+  const now = new Date();
+  if (range === "today") {
+    return { start: startOfDay(now).toISOString(), end: now.toISOString() };
+  }
+  if (range === "yesterday") {
+    const y = subDays(now, 1);
+    return { start: startOfDay(y).toISOString(), end: endOfDay(y).toISOString() };
+  }
+  const days = parseInt(range) || 7;
+  return { start: subDays(now, days).toISOString(), end: now.toISOString() };
+};
+
 const Dashboard = () => {
+  const [dateRange, setDateRange] = useState("7");
   const [data, setData] = useState<DashboardData>({
     totalDisparos: 0, totalSent: 0, totalFailed: 0,
     totalLeads: 0, totalLists: 0, totalTemplates: 0,
@@ -34,8 +48,9 @@ const Dashboard = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      const { start, end } = getDateFilter(dateRange);
       const [disparosRes, leadsRes, listsRes, templatesRes, instances, publicLeadsRes] = await Promise.all([
-        supabase.from("disparos").select("*").order("started_at", { ascending: false }),
+        supabase.from("disparos").select("*").gte("started_at", start).lte("started_at", end).order("started_at", { ascending: false }),
         supabase.from("leads").select("id", { count: "exact", head: true }),
         supabase.from("lead_lists").select("id", { count: "exact", head: true }),
         supabase.from("templates").select("id", { count: "exact", head: true }),
@@ -89,7 +104,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [dateRange]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -148,15 +163,28 @@ const Dashboard = () => {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
             <p className="text-sm text-muted-foreground">Visão geral das suas operações</p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Atualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="today">Hoje</option>
+              <option value="yesterday">Ontem</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+            </select>
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         {/* Stats cards */}

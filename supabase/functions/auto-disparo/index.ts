@@ -349,15 +349,40 @@ async function processInstanceDispatch(supabase: any, instanceDbId: string) {
 
       try {
         const type = template.type || "text";
-        await sendTemplateMessage(inst, lead.phone, text, type, metadata);
+        const sendResult = await sendTemplateMessage(inst, lead.phone, text, type, metadata);
+        if (!sendResult?.ok) {
+          throw new Error(`Z-API retornou erro: ${sendResult?.status || "?"}`);
+        }
         sent++;
         consecutiveFailures = 0;
 
-        // Mark lead as dispatched
-        await supabase
+        // Registrar zaapId para webhook de entrega (realmente enviados) - não falha se tabela não existir
+        const zaapId = sendResult?.data?.zaapId || sendResult?.data?.messageId || sendResult?.data?.id;
+        if (zaapId && disparo) {
+          try {
+            await supabase.from("disparo_messages").insert({
+              disparo_id: disparo.id,
+              zaap_id: String(zaapId),
+              phone: lead.phone,
+              instance_id: inst.instance_id,
+            });
+          } catch (_) { /* tabela pode não existir ainda */ }
+        }
+
+        // Mark lead as dispatched (validar retorno; retry uma vez em falha)
+        let upd = await supabase
           .from("leads")
           .update({ dispatched: true, dispatched_at: new Date().toISOString() })
           .eq("id", lead.id);
+        if (upd.error) {
+          upd = await supabase
+            .from("leads")
+            .update({ dispatched: true, dispatched_at: new Date().toISOString() })
+            .eq("id", lead.id);
+          if (upd.error) {
+            console.error(`[auto-disparo] Falha ao marcar lead ${lead.id} como dispatched:`, upd.error.message);
+          }
+        }
 
         // Post-send: Mute → Archive → Delete
         await sleep(300);
@@ -485,14 +510,38 @@ async function processLegacyDisparo(supabase: any, disparo: any) {
 
     try {
       const type = template.type || "text";
-      await sendTemplateMessage(inst, lead.phone, text, type, metadata);
+      const sendResult = await sendTemplateMessage(inst, lead.phone, text, type, metadata);
+      if (!sendResult?.ok) {
+        throw new Error(`Z-API retornou erro: ${sendResult?.status || "?"}`);
+      }
       sent++;
 
-      // Mark lead as dispatched
-      await supabase
+      const zaapId = sendResult?.data?.zaapId || sendResult?.data?.messageId || sendResult?.data?.id;
+      if (zaapId) {
+        try {
+          await supabase.from("disparo_messages").insert({
+            disparo_id: disparo.id,
+            zaap_id: String(zaapId),
+            phone: lead.phone,
+            instance_id: inst.instance_id,
+          });
+        } catch (_) { /* tabela pode não existir ainda */ }
+      }
+
+      // Mark lead as dispatched (validar retorno; retry uma vez em falha)
+      let upd = await supabase
         .from("leads")
         .update({ dispatched: true, dispatched_at: new Date().toISOString() })
         .eq("id", lead.id);
+      if (upd.error) {
+        upd = await supabase
+          .from("leads")
+          .update({ dispatched: true, dispatched_at: new Date().toISOString() })
+          .eq("id", lead.id);
+        if (upd.error) {
+          console.error(`[auto-disparo] Falha ao marcar lead ${lead.id} como dispatched:`, upd.error.message);
+        }
+      }
 
       await sleep(300);
       await zApiCall(inst, "modify-chat", "POST", { phone: lead.phone, action: "mute" });

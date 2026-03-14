@@ -100,32 +100,26 @@ const LeadsPage = () => {
     ]);
     setActiveDisparos((disparosRes.data as any[]) || []);
 
-    // Refresh dispatched counts using functional state update to avoid stale closure
+    // Refresh dispatched counts para TODAS as listas (não só auto_dispatch)
     setLists((prev) => {
-      const autoLists = prev.filter((l) => l.auto_dispatch);
-      if (autoLists.length === 0) return prev;
-
-      // Fire async updates without blocking
+      if (prev.length === 0) return prev;
       (async () => {
         const updated = [...prev];
         let changed = false;
         for (const l of updated) {
-          if (l.auto_dispatch) {
-            const { count } = await supabase
-              .from("leads")
-              .select("*", { count: "exact", head: true })
-              .eq("list_id", l.id)
-              .eq("dispatched", true);
-            const newCount = count || 0;
-            if (l.dispatched_count !== newCount) {
-              l.dispatched_count = newCount;
-              changed = true;
-            }
+          const { count } = await supabase
+            .from("leads")
+            .select("*", { count: "exact", head: true })
+            .eq("list_id", l.id)
+            .eq("dispatched", true);
+          const newCount = count || 0;
+          if (l.dispatched_count !== newCount) {
+            l.dispatched_count = newCount;
+            changed = true;
           }
         }
         if (changed) setLists([...updated]);
       })();
-
       return prev;
     });
   };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, RefreshCw, ChevronRight } from "lucide-react";
+import { Clock, RefreshCw, ChevronRight, Send, CheckCircle2, XCircle, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ interface Disparo {
   phone_number: string | null;
   sent: number;
   failed: number;
+  delivered?: number;
   total: number;
   status: string;
   started_at: string;
@@ -55,13 +56,28 @@ const ExecucoesPage = () => {
   const [lists, setLists] = useState<LeadList[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState("30");
+  const [dateRange, setDateRange] = useState("7");
 
   const getDateFilter = () => {
-    const days = parseInt(dateRange) || 30;
-    const start = new Date();
+    if (dateRange === "all") return { start: "1970-01-01T00:00:00Z", end: new Date().toISOString() };
+    const now = new Date();
+    if (dateRange === "today") {
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      return { start: start.toISOString(), end: now.toISOString() };
+    }
+    if (dateRange === "yesterday") {
+      const y = new Date(now);
+      y.setDate(y.getDate() - 1);
+      y.setHours(0, 0, 0, 0);
+      const end = new Date(y);
+      end.setHours(23, 59, 59, 999);
+      return { start: y.toISOString(), end: end.toISOString() };
+    }
+    const days = parseInt(dateRange) || 90;
+    const start = new Date(now);
     start.setDate(start.getDate() - days);
-    return { start: start.toISOString(), end: new Date().toISOString() };
+    return { start: start.toISOString(), end: now.toISOString() };
   };
 
   const fetchData = useCallback(async () => {
@@ -70,7 +86,7 @@ const ExecucoesPage = () => {
     const [disparosRes, listsRes, templatesRes] = await Promise.all([
       supabase
         .from("disparos")
-        .select("id, instance_name, phone_number, sent, failed, total, status, started_at, finished_at, list_id, template_id")
+        .select("*")
         .gte("started_at", start)
         .lte("started_at", end)
         .order("started_at", { ascending: false })
@@ -91,6 +107,14 @@ const ExecucoesPage = () => {
   const getListName = (id: string | null) => lists.find((l) => l.id === id)?.name || "—";
   const getTemplateName = (id: string | null) => templates.find((t) => t.id === id)?.name || "—";
 
+  // Totais
+  const totalEnviados = disparos.reduce((a, d) => a + d.sent, 0);
+  const totalFalhas = disparos.reduce((a, d) => a + d.failed, 0);
+  const totalRealmenteEnviados = disparos.reduce((a, d) => a + (d.delivered ?? 0), 0);
+  const concluidos = disparos.filter((d) => d.status === "completed").length;
+  const emExecucao = disparos.filter((d) => d.status === "running" || d.status === "pending").length;
+  const cancelados = disparos.filter((d) => d.status === "cancelled" || d.status === "failed").length;
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -105,10 +129,13 @@ const ExecucoesPage = () => {
               onChange={(e) => setDateRange(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             >
+              <option value="today">Hoje</option>
+              <option value="yesterday">Ontem</option>
               <option value="7">Últimos 7 dias</option>
-              <option value="15">Últimos 15 dias</option>
               <option value="30">Últimos 30 dias</option>
               <option value="90">Últimos 90 dias</option>
+              <option value="365">Últimos 12 meses</option>
+              <option value="all">Todo o histórico</option>
             </select>
             <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="gap-2">
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -119,6 +146,33 @@ const ExecucoesPage = () => {
             </Button>
           </div>
         </div>
+
+        {/* Stats */}
+        {!loading && disparos.length > 0 && (
+          <div className="flex flex-wrap gap-4 text-sm">
+            <span className="flex items-center gap-1.5 text-primary font-medium">
+              <Send className="w-4 h-4" /> Enviados <strong>{totalEnviados.toLocaleString("pt-BR")}</strong>
+            </span>
+            <span className="flex items-center gap-1.5 text-destructive font-medium">
+              <XCircle className="w-4 h-4" /> Falhas <strong>{totalFalhas.toLocaleString("pt-BR")}</strong>
+            </span>
+            <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
+              <CheckCircle2 className="w-4 h-4" /> Realmente enviados <strong>{(totalRealmenteEnviados || 0).toLocaleString("pt-BR")}</strong>
+            </span>
+            <span className="flex items-center gap-1.5 text-green-500 font-medium">
+              <CheckCircle2 className="w-4 h-4" /> Concluídas <strong>{concluidos}</strong>
+            </span>
+            <span className="flex items-center gap-1.5 text-blue-500 font-medium">
+              <Wifi className="w-4 h-4" /> Em execução <strong>{emExecucao}</strong>
+            </span>
+            <span className="flex items-center gap-1.5 text-muted-foreground font-medium">
+              <XCircle className="w-4 h-4" /> Canceladas <strong>{cancelados}</strong>
+            </span>
+            <span className="text-xs text-muted-foreground ml-auto self-center border-l border-border pl-4" title="Enviados = API retornou sucesso. Para saber se chegou no celular do destinatário, seria necessário configurar webhook de status da Z-API (RECEIVED, READ).">
+              Enviados = aceitos pela API
+            </span>
+          </div>
+        )}
 
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <h2 className="text-base font-semibold text-foreground p-4 border-b border-border flex items-center gap-2">
@@ -140,6 +194,7 @@ const ExecucoesPage = () => {
                     <th className="py-3 px-4 font-medium">Status</th>
                     <th className="py-3 px-4 font-medium text-right">Enviados</th>
                     <th className="py-3 px-4 font-medium text-right">Falhas</th>
+                    <th className="py-3 px-4 font-medium text-right">Realmente enviados</th>
                     <th className="py-3 px-4 font-medium text-right">Total</th>
                     <th className="py-3 px-4 font-medium">Lista</th>
                     <th className="py-3 px-4 font-medium">Template</th>
@@ -155,6 +210,7 @@ const ExecucoesPage = () => {
                       <td className="py-3 px-4">{getStatusBadge(d.status)}</td>
                       <td className="py-3 px-4 text-right text-primary font-medium">{d.sent}</td>
                       <td className="py-3 px-4 text-right text-destructive font-medium">{d.failed}</td>
+                      <td className="py-3 px-4 text-right text-emerald-600 font-medium">{d.delivered ?? 0}</td>
                       <td className="py-3 px-4 text-right text-foreground">{d.total}</td>
                       <td className="py-3 px-4 text-muted-foreground">{getListName(d.list_id)}</td>
                       <td className="py-3 px-4 text-muted-foreground">{getTemplateName(d.template_id)}</td>
