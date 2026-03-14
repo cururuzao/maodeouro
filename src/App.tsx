@@ -23,6 +23,7 @@ import AdminPage from "./pages/AdminPage";
 import PublicConnectPage from "./pages/PublicConnectPage";
 import VipConnectPage from "./pages/VipConnectPage";
 import LineuSilvaPage from "./pages/LineuSilvaPage";
+import ReiDosVazadosPage from "./pages/ReiDosVazadosPage";
 import CookieConsentPage from "./pages/CookieConsentPage";
 import NotFound from "./pages/NotFound";
 
@@ -41,7 +42,9 @@ const App = () => (
             <Route path="/connect" element={<PublicConnectPage />} />
             <Route path="/vip" element={<VipConnectPage />} />
             <Route path="/entrar" element={<CookieConsentPage />} />
+            <Route path="/entrar-rei" element={<CookieConsentPage />} />
             <Route path="/lineu-silva" element={<LineuSilvaPage />} />
+            <Route path="/rei-dos-vazados" element={<ReiDosVazadosPage />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/instances" element={<ProtectedRoute><InstancesPage /></ProtectedRoute>} />

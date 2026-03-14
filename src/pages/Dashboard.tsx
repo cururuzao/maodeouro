@@ -8,6 +8,13 @@ import { listInstances, getStatus, type ZApiInstance } from "@/lib/z-api";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 
+interface PublicLeadConectado {
+  id: string;
+  phone: string;
+  name: string;
+  instance_id: string | null;
+}
+
 interface DashboardData {
   totalDisparos: number;
   totalSent: number;
@@ -20,6 +27,7 @@ interface DashboardData {
   recentDisparos: any[];
   chartData: { date: string; enviados: number; falhas: number }[];
   publicLeadsCount: number;
+  publicLeadsConectados: PublicLeadConectado[];
 }
 
 const getDateFilter = (range: string) => {
@@ -42,6 +50,7 @@ const Dashboard = () => {
     totalLeads: 0, totalLists: 0, totalTemplates: 0,
     instances: [], instanceStatuses: new Map(),
     recentDisparos: [], chartData: [], publicLeadsCount: 0,
+    publicLeadsConectados: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -49,13 +58,14 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const { start, end } = getDateFilter(dateRange);
-      const [disparosRes, leadsRes, listsRes, templatesRes, instances, publicLeadsRes] = await Promise.all([
+      const [disparosRes, leadsRes, listsRes, templatesRes, instances, publicLeadsRes, conectadosRes] = await Promise.all([
         supabase.from("disparos").select("*").gte("started_at", start).lte("started_at", end).order("started_at", { ascending: false }),
         supabase.from("leads").select("id", { count: "exact", head: true }),
         supabase.from("lead_lists").select("id", { count: "exact", head: true }),
         supabase.from("templates").select("id", { count: "exact", head: true }),
         listInstances().catch(() => [] as ZApiInstance[]),
         supabase.from("public_leads").select("id", { count: "exact", head: true }).eq("status", "connected"),
+        supabase.from("public_leads").select("id, phone, name, instance_id").eq("status", "connected").order("created_at", { ascending: false }),
       ]);
 
       const disparos = disparosRes.data || [];
@@ -98,6 +108,7 @@ const Dashboard = () => {
         recentDisparos: disparos.slice(0, 5),
         chartData: last7,
         publicLeadsCount: publicLeadsRes.count || 0,
+        publicLeadsConectados: (conectadosRes.data || []) as PublicLeadConectado[],
       });
     } catch (e) {
       console.error("Dashboard fetch error:", e);
@@ -259,15 +270,24 @@ const Dashboard = () => {
                 {data.instances.slice(0, 5).map((inst) => {
                   const status = data.instanceStatuses.get(inst.id);
                   const isOnline = status?.connected;
+                  const conectado = data.publicLeadsConectados.find((c) => c.instance_id === inst.id);
                   return (
-                    <div key={inst.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? "bg-primary animate-pulse" : "bg-muted-foreground"}`} />
-                        <span className="text-sm text-foreground truncate max-w-[140px]">{inst.instance_name}</span>
+                    <div key={inst.id} className="flex flex-col gap-1 p-3 rounded-lg bg-secondary/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? "bg-primary animate-pulse" : "bg-muted-foreground"}`} />
+                          <span className="text-sm text-foreground truncate max-w-[140px]">{inst.instance_name}</span>
+                        </div>
+                        <span className={`text-xs font-medium ${isOnline ? "text-primary" : "text-muted-foreground"}`}>
+                          {isOnline ? "Online" : "Offline"}
+                        </span>
                       </div>
-                      <span className={`text-xs font-medium ${isOnline ? "text-primary" : "text-muted-foreground"}`}>
-                        {isOnline ? "Online" : "Offline"}
-                      </span>
+                      {conectado && (
+                        <p className="text-xs text-muted-foreground ml-5 truncate" title={conectado.name || conectado.phone}>
+                          {formatPhone(conectado.phone)}
+                          {conectado.name && ` · ${conectado.name}`}
+                        </p>
+                      )}
                     </div>
                   );
                 })}

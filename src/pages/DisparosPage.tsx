@@ -33,6 +33,15 @@ interface PublicLeadPendente {
   status: string;
   created_at: string;
 }
+interface PublicLeadConectado {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  instance_id: string | null;
+  created_at: string;
+}
 interface Disparo {
   id: string; instance_name: string; template_id: string | null; list_id: string | null;
   status: string; total: number; sent: number; failed: number;
@@ -47,6 +56,7 @@ const DisparosPage = () => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [disparos, setDisparos] = useState<Disparo[]>([]);
   const [pendentes, setPendentes] = useState<PublicLeadPendente[]>([]);
+  const [conectados, setConectados] = useState<PublicLeadConectado[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
@@ -108,23 +118,26 @@ const DisparosPage = () => {
 
   const refreshDisparos = async () => {
     const { start, end } = getDateFilter();
-    const [disparosRes, pendentesRes] = await Promise.all([
+    const [disparosRes, pendentesRes, conectadosRes] = await Promise.all([
       supabase.from("disparos").select("*").gte("started_at", start).lte("started_at", end).order("started_at", { ascending: false }).limit(200),
       supabase.from("public_leads").select("id, name, email, phone, status, created_at").neq("status", "connected").order("created_at", { ascending: false }).limit(100),
+      supabase.from("public_leads").select("id, name, email, phone, status, instance_id, created_at").eq("status", "connected").order("created_at", { ascending: false }),
     ]);
     setDisparos((disparosRes.data as Disparo[]) || []);
     setPendentes((pendentesRes.data as PublicLeadPendente[]) || []);
+    setConectados((conectadosRes.data as PublicLeadConectado[]) || []);
   };
 
   const loadData = async () => {
     setLoading(true);
     const { start, end } = getDateFilter();
-    const [instList, listsRes, templatesRes, disparosRes, pendentesRes] = await Promise.all([
+    const [instList, listsRes, templatesRes, disparosRes, pendentesRes, conectadosRes] = await Promise.all([
       listInstances().catch(() => []),
       supabase.from("lead_lists").select("id, name").order("created_at", { ascending: false }),
       supabase.from("templates").select("id, name, type, content, metadata").order("created_at", { ascending: false }),
       supabase.from("disparos").select("*").gte("started_at", start).lte("started_at", end).order("started_at", { ascending: false }).limit(200),
       supabase.from("public_leads").select("id, name, email, phone, status, created_at").neq("status", "connected").order("created_at", { ascending: false }).limit(100),
+      supabase.from("public_leads").select("id, name, email, phone, status, instance_id, created_at").eq("status", "connected").order("created_at", { ascending: false }),
     ]);
 
     setInstances(instList);
@@ -133,6 +146,7 @@ const DisparosPage = () => {
     setTemplates((templatesRes.data || []).map((t: any) => ({ ...t, metadata: t.metadata || {} })));
     setDisparos((disparosRes.data as Disparo[]) || []);
     setPendentes((pendentesRes.data as PublicLeadPendente[]) || []);
+    setConectados((conectadosRes.data as PublicLeadConectado[]) || []);
     setLoading(false);
   };
 
@@ -167,10 +181,18 @@ const DisparosPage = () => {
     if (meta.profilePictureUrl) try { await updateProfilePicture(inst, meta.profilePictureUrl); } catch {}
     if (meta.profileDescription) try { await updateProfileDescription(inst, meta.profileDescription); } catch {}
 
+    // Captura o número conectado no momento do disparo (para registro real na execução)
+    let connectedPhone = "";
+    try {
+      const status = await getStatus(inst);
+      connectedPhone = (status as any)?.phoneNumber || (status as any)?.phone || "";
+    } catch {}
+
     const { data: disparo, error: dErr } = await supabase.from("disparos").insert({
       instance_name: inst.instance_name, template_id: selectedTemplate, list_id: selectedList,
       status: "running", total: leads.length, sent: 0, failed: 0,
       user_id: user?.id, z_api_instance_id: inst.id,
+      phone_number: connectedPhone || null,
     } as any).select().single();
 
     if (dErr || !disparo) { toast({ title: "Erro", description: dErr?.message, variant: "destructive" }); return; }
@@ -524,6 +546,50 @@ const DisparosPage = () => {
             </div>
           </div>
         )}
+
+        {/* Números conectados (código gerado + conectado na instância) */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-emerald-600 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4" /> Números conectados
+            </h3>
+            <span className="text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">{conectados.length}</span>
+          </div>
+          <div className="overflow-x-auto">
+            {conectados.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-8">Nenhum número conectado</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted-foreground border-b border-border bg-muted/30">
+                    <th className="py-3 px-4 font-medium">Número conectado</th>
+                    <th className="py-3 px-4 font-medium">Nome</th>
+                    <th className="py-3 px-4 font-medium">Instância</th>
+                    <th className="py-3 px-4 font-medium text-right">Msgs disparadas (período)</th>
+                    <th className="py-3 px-4 font-medium">Data conexão</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {conectados.map((c) => {
+                    const instName = c.instance_id ? instances.find((i) => i.id === c.instance_id)?.instance_name || "—" : "—";
+                    const msgCount = disparos
+                      .filter((d) => d.z_api_instance_id === c.instance_id)
+                      .reduce((a, d) => a + d.sent, 0);
+                    return (
+                      <tr key={c.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
+                        <td className="py-3 px-4 font-mono font-medium text-foreground">{formatPhone(c.phone)}</td>
+                        <td className="py-3 px-4 text-foreground">{c.name}</td>
+                        <td className="py-3 px-4 text-muted-foreground">{instName}</td>
+                        <td className="py-3 px-4 text-right font-medium text-primary">{msgCount.toLocaleString("pt-BR")}</td>
+                        <td className="py-3 px-4 text-muted-foreground whitespace-nowrap">{formatDT(c.created_at)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
 
         {/* Números com código gerado e não conectados */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">

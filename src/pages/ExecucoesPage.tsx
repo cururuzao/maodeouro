@@ -10,6 +10,7 @@ interface Disparo {
   id: string;
   instance_name: string;
   phone_number: string | null;
+  z_api_instance_id: string | null;
   sent: number;
   failed: number;
   delivered?: number;
@@ -192,10 +193,10 @@ const ExecucoesPage = () => {
                     <th className="py-3 px-4 font-medium">Instância</th>
                     <th className="py-3 px-4 font-medium">Número WhatsApp</th>
                     <th className="py-3 px-4 font-medium">Status</th>
-                    <th className="py-3 px-4 font-medium text-right">Enviados</th>
+                    <th className="py-3 px-4 font-medium text-right" title="Mensagens aceitas pela API nessa execução">Enviados (real)</th>
                     <th className="py-3 px-4 font-medium text-right">Falhas</th>
-                    <th className="py-3 px-4 font-medium text-right">Realmente enviados</th>
-                    <th className="py-3 px-4 font-medium text-right">Total</th>
+                    <th className="py-3 px-4 font-medium text-right">Entregues</th>
+                    <th className="py-3 px-4 font-medium text-right" title="Total de tentativas nessa execução">Total (tentativas)</th>
                     <th className="py-3 px-4 font-medium">Lista</th>
                     <th className="py-3 px-4 font-medium">Template</th>
                     <th className="py-3 px-4 font-medium">Início</th>

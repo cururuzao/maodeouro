@@ -1,17 +1,29 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Cookie } from "lucide-react";
 import { initFacebookPixel } from "@/lib/facebook-pixel";
+
+// Destino após aceitar cookies: por pathname ou ?to=
+const getRedirectTo = (pathname: string, search: string): string => {
+  const params = new URLSearchParams(search);
+  const to = params.get("to");
+  if (to) return `/${to.replace(/^\//, "")}`;
+  if (pathname === "/entrar-rei") return "/rei-dos-vazados";
+  return "/lineu-silva";
+};
 
 const CookieConsentPage = () => {
   useEffect(() => {
     initFacebookPixel();
   }, []);
   const navigate = useNavigate();
+  const { pathname, search } = useLocation();
+  const redirectTo = getRedirectTo(pathname, search);
+  const isRei = redirectTo === "/rei-dos-vazados";
 
   const handleAceitar = () => {
-    navigate("/lineu-silva", { replace: true });
+    navigate(redirectTo, { replace: true });
   };
 
   return (
@@ -21,8 +33,10 @@ const CookieConsentPage = () => {
     >
       <div className="max-w-md w-full text-center">
         <div className="flex justify-center mb-8">
-          <div className="w-20 h-20 rounded-2xl bg-red-500/20 border-2 border-red-500/40 flex items-center justify-center">
-            <Cookie className="w-10 h-10 text-red-500" />
+          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${
+            isRei ? "bg-blue-500/20 border-2 border-blue-500/40" : "bg-red-500/20 border-2 border-red-500/40"
+          }`}>
+            <Cookie className={`w-10 h-10 ${isRei ? "text-blue-500" : "text-red-500"}`} />
           </div>
         </div>
         <h1
@@ -36,7 +50,9 @@ const CookieConsentPage = () => {
         </p>
         <Button
           onClick={handleAceitar}
-          className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-6 rounded-xl text-base"
+          className={`w-full text-white font-semibold py-6 rounded-xl text-base ${
+            isRei ? "bg-blue-500 hover:bg-blue-600" : "bg-red-500 hover:bg-red-600"
+          }`}
         >
           Aceitar e continuar
         </Button>
