@@ -510,7 +510,7 @@ async function processLegacyDisparo(supabase: any, disparo: any) {
       await supabase.from("disparos").update({ sent, failed }).eq("id", disparo.id);
     }
 
-    await sleep(200);
+    await sleep(5000);
   }
 
   await supabase.from("disparos").update({
