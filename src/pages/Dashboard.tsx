@@ -125,6 +125,11 @@ const Dashboard = () => {
     },
   ];
 
+  const formatPhone = (phone: string) => {
+    const dg = phone.replace(/\D/g, "").slice(-11);
+    return dg.length === 11 ? dg.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3") : dg || "—";
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -132,7 +137,8 @@ const Dashboard = () => {
       case "running":
         return <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-medium">Em andamento</span>;
       case "failed":
-        return <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/15 text-destructive font-medium">Falhou</span>;
+      case "cancelled":
+        return <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/15 text-destructive font-medium">{status === "cancelled" ? "Cancelado" : "Falhou"}</span>;
       default:
         return <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Pendente</span>;
     }
@@ -255,6 +261,7 @@ const Dashboard = () => {
                 <thead>
                   <tr className="text-left text-muted-foreground border-b border-border">
                     <th className="pb-3 font-medium">Instância</th>
+                    <th className="pb-3 font-medium">Número WhatsApp</th>
                     <th className="pb-3 font-medium">Status</th>
                     <th className="pb-3 font-medium text-right">Enviados</th>
                     <th className="pb-3 font-medium text-right">Falhas</th>
@@ -266,6 +273,7 @@ const Dashboard = () => {
                   {data.recentDisparos.map((d) => (
                     <tr key={d.id} className="hover:bg-secondary/30 transition-colors">
                       <td className="py-3 text-foreground">{d.instance_name}</td>
+                      <td className="py-3 text-foreground font-mono font-medium">{d.phone_number ? formatPhone(d.phone_number) : "—"}</td>
                       <td className="py-3">{getStatusBadge(d.status)}</td>
                       <td className="py-3 text-right text-primary font-medium">{d.sent}</td>
                       <td className="py-3 text-right text-destructive font-medium">{d.failed}</td>

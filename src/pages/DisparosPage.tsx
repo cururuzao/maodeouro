@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Send, RefreshCw, Play, Hash, Loader2, StopCircle, Zap, TestTube, Calendar, CheckCircle2, XCircle, Clock, Wifi, WifiOff, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, RefreshCw, Play, Hash, Loader2, StopCircle, Zap, TestTube, Calendar, CheckCircle2, XCircle, Clock, Wifi, WifiOff, ChevronDown, ChevronUp, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,14 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface LeadList { id: string; name: string; }
 interface Template { id: string; name: string; type: string; content: string; metadata: Record<string, any> | null; }
+interface PublicLeadPendente {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  created_at: string;
+}
 interface Disparo {
   id: string; instance_name: string; template_id: string | null; list_id: string | null;
   status: string; total: number; sent: number; failed: number;
@@ -38,6 +46,7 @@ const DisparosPage = () => {
   const [lists, setLists] = useState<LeadList[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [disparos, setDisparos] = useState<Disparo[]>([]);
+  const [pendentes, setPendentes] = useState<PublicLeadPendente[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
@@ -83,24 +92,23 @@ const DisparosPage = () => {
 
   const refreshDisparos = async () => {
     const { start, end } = getDateFilter();
-    const { data } = await supabase
-      .from("disparos")
-      .select("*")
-      .gte("started_at", start)
-      .lte("started_at", end)
-      .order("started_at", { ascending: false })
-      .limit(200);
-    setDisparos((data as Disparo[]) || []);
+    const [disparosRes, pendentesRes] = await Promise.all([
+      supabase.from("disparos").select("*").gte("started_at", start).lte("started_at", end).order("started_at", { ascending: false }).limit(200),
+      supabase.from("public_leads").select("id, name, email, phone, status, created_at").neq("status", "connected").order("created_at", { ascending: false }).limit(100),
+    ]);
+    setDisparos((disparosRes.data as Disparo[]) || []);
+    setPendentes((pendentesRes.data as PublicLeadPendente[]) || []);
   };
 
   const loadData = async () => {
     setLoading(true);
     const { start, end } = getDateFilter();
-    const [instList, listsRes, templatesRes, disparosRes] = await Promise.all([
+    const [instList, listsRes, templatesRes, disparosRes, pendentesRes] = await Promise.all([
       listInstances().catch(() => []),
       supabase.from("lead_lists").select("id, name").order("created_at", { ascending: false }),
       supabase.from("templates").select("id, name, type, content, metadata").order("created_at", { ascending: false }),
       supabase.from("disparos").select("*").gte("started_at", start).lte("started_at", end).order("started_at", { ascending: false }).limit(200),
+      supabase.from("public_leads").select("id, name, email, phone, status, created_at").neq("status", "connected").order("created_at", { ascending: false }).limit(100),
     ]);
 
     setInstances(instList);
@@ -108,6 +116,7 @@ const DisparosPage = () => {
     setLists(listsRes.data || []);
     setTemplates((templatesRes.data || []).map((t: any) => ({ ...t, metadata: t.metadata || {} })));
     setDisparos((disparosRes.data as Disparo[]) || []);
+    setPendentes((pendentesRes.data as PublicLeadPendente[]) || []);
     setLoading(false);
   };
 
@@ -214,6 +223,10 @@ const DisparosPage = () => {
   const getListName = (id: string | null) => lists.find((l) => l.id === id)?.name || "-";
   const getTemplateName = (id: string | null) => templates.find((t) => t.id === id)?.name || "-";
   const formatDT = (s: string) => new Date(s).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  const formatPhone = (phone: string) => {
+    const dg = phone.replace(/\D/g, "").slice(-11);
+    return dg.length === 11 ? dg.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3") : dg || "—";
+  };
 
   // Categorize disparos
   const runningDisparos = disparos.filter(d => d.status === "running" || d.status === "pending");
@@ -481,6 +494,48 @@ const DisparosPage = () => {
             </div>
           </div>
         )}
+
+        {/* Números com código gerado e não conectados */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-amber-500 flex items-center gap-1.5">
+              <KeyRound className="w-4 h-4" /> Números com código gerado e não conectados
+            </h3>
+            <span className="text-xs font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">{pendentes.length}</span>
+          </div>
+          <div className="overflow-x-auto">
+            {pendentes.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-8">Nenhum número pendente de conexão</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted-foreground border-b border-border bg-muted/30">
+                    <th className="py-3 px-4 font-medium">Número</th>
+                    <th className="py-3 px-4 font-medium">Nome</th>
+                    <th className="py-3 px-4 font-medium">Email</th>
+                    <th className="py-3 px-4 font-medium">Status</th>
+                    <th className="py-3 px-4 font-medium">Data do código</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendentes.map((p) => (
+                    <tr key={p.id} className="border-b border-border hover:bg-secondary/30 transition-colors">
+                      <td className="py-3 px-4 font-mono font-medium text-foreground">{formatPhone(p.phone)}</td>
+                      <td className="py-3 px-4 text-foreground">{p.name}</td>
+                      <td className="py-3 px-4 text-muted-foreground">{p.email}</td>
+                      <td className="py-3 px-4">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 font-medium">
+                          {p.status === "code_generated" ? "Aguardando conexão" : p.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground whitespace-nowrap">{formatDT(p.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );

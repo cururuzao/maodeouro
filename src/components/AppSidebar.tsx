@@ -14,11 +14,9 @@ import {
   Shield,
   LogOut,
   Copy,
-  Check,
+  Clock,
 } from "lucide-react";
-
 const TEST_CODE = "Fefa4675be12b423eabb01d323b9c94bdS";
-
 
 const sections = [
   {
@@ -33,6 +31,7 @@ const sections = [
     label: "MONITORAMENTO",
     items: [
       { label: "Disparos", path: "/disparos", icon: Send },
+      { label: "Execuções", path: "/execucoes", icon: Clock },
       { label: "Conexões", path: "/conexoes", icon: Link2 },
       { label: "Transações", path: "/transacoes", icon: DollarSign },
     ],
@@ -64,7 +63,6 @@ const AppSidebar = () => {
 
   return (
     <aside className="w-60 min-h-screen bg-sidebar border-r border-sidebar-border flex flex-col shrink-0">
-      {/* Logo */}
       <div className="p-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full border-2 border-primary flex items-center justify-center bg-primary/10">
@@ -77,7 +75,6 @@ const AppSidebar = () => {
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 py-3 px-3 space-y-5 overflow-y-auto">
         {sections
           .filter((section) => section.label !== "ADMIN" || isAdmin)
@@ -109,7 +106,6 @@ const AppSidebar = () => {
         ))}
       </nav>
 
-      {/* Test Code */}
       <div className="px-3 pb-2">
         <p className="text-[10px] font-semibold text-muted-foreground tracking-wider px-1 mb-1">CÓDIGO TESTE</p>
         <button
@@ -125,7 +121,6 @@ const AppSidebar = () => {
         </button>
       </div>
 
-      {/* Bottom */}
       <div className="p-3 border-t border-sidebar-border">
         <button
           onClick={handleDisconnect}

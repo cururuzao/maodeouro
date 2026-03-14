@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import InstancesPage from "./pages/InstancesPage";
 import DisparosPage from "./pages/DisparosPage";
+import ExecucoesPage from "./pages/ExecucoesPage";
 import ConexoesPage from "./pages/ConexoesPage";
 import LeadsPage from "./pages/LeadsPage";
 import TemplatesPage from "./pages/TemplatesPage";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/instances" element={<ProtectedRoute><InstancesPage /></ProtectedRoute>} />
             <Route path="/disparos" element={<ProtectedRoute><DisparosPage /></ProtectedRoute>} />
+            <Route path="/execucoes" element={<ProtectedRoute><ExecucoesPage /></ProtectedRoute>} />
             <Route path="/conexoes" element={<ProtectedRoute><ConexoesPage /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
             <Route path="/templates" element={<ProtectedRoute><TemplatesPage /></ProtectedRoute>} />
