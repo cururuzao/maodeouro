@@ -61,11 +61,11 @@ const ReiDosVazadosPage = () => {
 
       <section className="px-4 pt-6 pb-10 max-w-lg mx-auto">
         <h1 className="text-center mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
-          <span className="block text-2xl md:text-3xl font-bold text-white">O melhor conteúdo</span>
-          <span className="block text-2xl md:text-3xl font-bold text-blue-500">no Telegram 🔥</span>
+          <span className="block text-2xl md:text-3xl font-bold text-white">Conteúdo de vazados que você</span>
+          <span className="block text-2xl md:text-3xl font-bold text-blue-500">NUNCA VIU 🔥</span>
         </h1>
         <p className="text-center text-white/90 text-sm md:text-base mb-6">
-          Entre no canal mais completo da Internet
+          Conheça o melhor grupo de vazados namorados, amadores, famosas e muito mais!
         </p>
 
         <div className="relative rounded-2xl overflow-hidden bg-black border border-gray-800 mb-4 group">
@@ -118,7 +118,7 @@ const ReiDosVazadosPage = () => {
           onClick={openTelegram}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 rounded-xl text-base"
         >
-          Abrir no Telegram
+          ENTRAR NO VIP
         </Button>
       </section>
 
