@@ -34,9 +34,9 @@ const CookieConsentPage = () => {
       <div className="max-w-md w-full text-center">
         <div className="flex justify-center mb-8">
           <div className={`w-20 h-20 rounded-2xl flex items-center justify-center ${
-            isRei ? "bg-blue-500/20 border-2 border-blue-500/40" : "bg-red-500/20 border-2 border-red-500/40"
+            isRei ? "bg-red-600/25 border-2 border-red-600/50" : "bg-red-500/20 border-2 border-red-500/40"
           }`}>
-            <Cookie className={`w-10 h-10 ${isRei ? "text-blue-500" : "text-red-500"}`} />
+            <Cookie className={`w-10 h-10 ${isRei ? "text-red-500" : "text-red-500"}`} />
           </div>
         </div>
         <h1
@@ -51,7 +51,7 @@ const CookieConsentPage = () => {
         <Button
           onClick={handleAceitar}
           className={`w-full text-white font-semibold py-6 rounded-xl text-base ${
-            isRei ? "bg-blue-500 hover:bg-blue-600" : "bg-red-500 hover:bg-red-600"
+            isRei ? "bg-red-600 hover:bg-red-700 shadow-lg shadow-red-900/30" : "bg-red-500 hover:bg-red-600"
           }`}
         >
           Aceitar e continuar

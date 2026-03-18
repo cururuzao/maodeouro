@@ -50,11 +50,16 @@ const ReiDosVazadosPage = () => {
       className="min-h-screen bg-black text-white antialiased"
       style={{ fontFamily: "'Poppins', sans-serif" }}
     >
-      <header className="sticky top-0 z-50 bg-black border-b border-gray-800 px-4 py-3 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500/30 to-blue-700/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
-          <img src={`${CDN_BASE}/IMG_0016_3eda9166.JPG`} alt="" className="w-full h-full object-cover" />
-        </div>
-        <span className="font-bold text-white text-lg" style={{ fontFamily: "'Poppins', sans-serif" }}>
+      <header className="sticky top-0 z-50 bg-black border-b border-red-950/50 px-4 py-4 flex flex-col items-center justify-center gap-2">
+        <img
+          src="/logo-rei-dos-vazados.png"
+          alt=""
+          className="w-14 h-14 md:w-16 md:h-16 rounded-xl object-cover shadow-lg ring-1 ring-red-900/40"
+        />
+        <span
+          className="font-bold text-red-500 text-lg md:text-xl text-center tracking-tight drop-shadow-sm"
+          style={{ fontFamily: "'Playfair Display', serif" }}
+        >
           Rei dos Vazados
         </span>
       </header>
@@ -62,13 +67,13 @@ const ReiDosVazadosPage = () => {
       <section className="px-4 pt-6 pb-10 max-w-lg mx-auto">
         <h1 className="text-center mb-2" style={{ fontFamily: "'Playfair Display', serif" }}>
           <span className="block text-2xl md:text-3xl font-bold text-white">Conteúdo de vazados que você</span>
-          <span className="block text-2xl md:text-3xl font-bold text-blue-500"><b>NUNCA VIU 🔥</b></span>
+          <span className="block text-2xl md:text-3xl font-bold text-red-500"><b>NUNCA VIU 🔥</b></span>
         </h1>
         <p className="text-center text-white/90 text-sm md:text-base mb-6">
           <b>Conheça o melhor grupo de vazados de namorados, amadores, famosas e muito mais!</b>
         </p>
 
-        <div className="relative rounded-2xl overflow-hidden bg-black border border-gray-800 mb-4 group">
+        <div className="relative rounded-2xl overflow-hidden bg-black border border-red-900/40 mb-4 group">
           <Carousel
             opts={{ align: "center", loop: true }}
             className="w-full"
@@ -97,8 +102,8 @@ const ReiDosVazadosPage = () => {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-blue-500/90 hover:bg-blue-600 text-white border-0 opacity-90 md:group-hover:opacity-100" />
-            <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-blue-500/90 hover:bg-blue-600 text-white border-0 opacity-90 md:group-hover:opacity-100" />
+            <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-red-600/95 hover:bg-red-700 text-white border-0 opacity-90 md:group-hover:opacity-100" />
+            <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-red-600/95 hover:bg-red-700 text-white border-0 opacity-90 md:group-hover:opacity-100" />
           </Carousel>
         </div>
 
@@ -107,7 +112,7 @@ const ReiDosVazadosPage = () => {
             <div
               key={i}
               className={`h-1 rounded-full transition-all ${
-                i === heroSlide ? "w-4 bg-blue-500" : "w-1.5 bg-gray-600"
+                i === heroSlide ? "w-4 bg-red-500" : "w-1.5 bg-gray-700"
               }`}
             />
           ))}
@@ -116,14 +121,14 @@ const ReiDosVazadosPage = () => {
 
         <Button
           onClick={openTelegram}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 rounded-xl text-base"
+          className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-6 rounded-xl text-base shadow-lg shadow-red-900/30"
         >
           ENTRAR NO VIP
         </Button>
       </section>
 
       <section className="px-4 pb-10 max-w-lg mx-auto">
-        <div className="bg-[#1a1d24] rounded-2xl border border-gray-800 p-6 md:p-8">
+        <div className="bg-[#1a0a0c] rounded-2xl border border-red-950/50 p-6 md:p-8">
           <h2 className="text-xl md:text-2xl font-bold text-white mb-4 leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
             Você está prestes a entrar no melhor grupo do Telegram
           </h2>
@@ -133,9 +138,9 @@ const ReiDosVazadosPage = () => {
           <p className="text-white font-semibold text-sm md:text-base mb-6">O que te espera:</p>
           <div className="space-y-4">
             {benefits.map((item) => (
-              <div key={item.title} className="flex gap-4 p-4 rounded-xl bg-black/50 border border-gray-800">
-                <div className="h-12 w-12 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                  <item.icon className="h-6 w-6 text-blue-500" />
+              <div key={item.title} className="flex gap-4 p-4 rounded-xl bg-black/50 border border-red-950/40">
+                <div className="h-12 w-12 rounded-lg bg-red-600/20 flex items-center justify-center flex-shrink-0">
+                  <item.icon className="h-6 w-6 text-red-500" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm md:text-base" style={{ fontFamily: "'Playfair Display', serif" }}>
@@ -153,7 +158,7 @@ const ReiDosVazadosPage = () => {
         <h3 className="text-xl md:text-2xl font-bold text-white text-center mb-6" style={{ fontFamily: "'Playfair Display', serif" }}>
           Dê uma espiadinha 👀
         </h3>
-        <div className="rounded-2xl overflow-hidden bg-black border border-gray-800 mb-6 w-full max-w-[320px] mx-auto aspect-[9/16] min-h-[300px]">
+        <div className="rounded-2xl overflow-hidden bg-black border border-red-900/40 mb-6 w-full max-w-[320px] mx-auto aspect-[9/16] min-h-[300px]">
           <video
             src={`${CDN_BASE}/ScreenRecording_03-10-202617-22-57_1_0e5f2d03.mp4`}
             controls
@@ -163,14 +168,14 @@ const ReiDosVazadosPage = () => {
           />
         </div>
         <div className="text-center mt-4">
-          <Button onClick={openTelegram} className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8 py-6 rounded-xl">
+          <Button onClick={openTelegram} className="bg-red-600 hover:bg-red-700 text-white font-semibold px-8 py-6 rounded-xl shadow-lg shadow-red-900/30">
             ENTRAR NO VIP
           </Button>
         </div>
       </section>
 
-      <footer className="bg-black border-t border-gray-800 py-6 text-center">
-        <p className="text-gray-500 text-sm">Rei dos Vazados · Grupo no Telegram</p>
+      <footer className="bg-black border-t border-red-950/40 py-6 text-center">
+        <p className="text-red-900/80 text-sm">Rei dos Vazados · Grupo no Telegram</p>
       </footer>
     </div>
   );
