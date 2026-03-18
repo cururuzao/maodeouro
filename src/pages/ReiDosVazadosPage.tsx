@@ -10,7 +10,7 @@ import {
 import { Flame, Video, Sparkles } from "lucide-react";
 
 const CDN_BASE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663113665449/as45WyzBdVgmTUSfVHBTEW";
-const TELEGRAM_LINK = "https://t.me/+_KC_xd1WszQ1OTFh";
+const TELEGRAM_LINK = "https://t.me/reidosvazadoz_bot";
 
 const HERO_SLIDES = [
   { id: 1, src: `${CDN_BASE}/copy_A6EFD7FE-3457-4050-8C0C-ACA100B7049E_4278313f.mov`, poster: `${CDN_BASE}/IMG_0340_94c5616d.JPG`, title: "Slide 1" },
@@ -42,7 +42,7 @@ const ReiDosVazadosPage = () => {
   const benefits = [
     { icon: Flame, title: "Conteúdo Exclusivo", description: "Os melhores vazados reunidos em um só lugar" },
     { icon: Video, title: "Organizado e Atualizado", description: "Centenas de vídeos e imagens postados diariamente" },
-    { icon: Sparkles, title: "100% Grátis", description: "Entre no grupo sem pagar nada" },
+    { icon: Sparkles, title: "Acesso direto", description: "Fale com o bot no Telegram e siga as instruções" },
   ];
 
   return (
@@ -64,13 +64,8 @@ const ReiDosVazadosPage = () => {
           <span className="block text-2xl md:text-3xl font-bold text-white">O melhor conteúdo</span>
           <span className="block text-2xl md:text-3xl font-bold text-blue-500">no Telegram 🔥</span>
         </h1>
-        <p className="text-center text-white/90 text-sm md:text-base mb-2">
-          Entre no grupo mais completo da Internet
-        </p>
-        <p className="text-center mb-6">
-          <span className="inline-block bg-blue-600/90 text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-lg">
-            🎬 Tudo 100% de graça — sem pagar nada
-          </span>
+        <p className="text-center text-white/90 text-sm md:text-base mb-6">
+          Entre no canal mais completo da Internet
         </p>
 
         <div className="relative rounded-2xl overflow-hidden bg-black border border-gray-800 mb-4 group">
@@ -123,7 +118,7 @@ const ReiDosVazadosPage = () => {
           onClick={openTelegram}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 rounded-xl text-base"
         >
-          Entrar no Grupo no Telegram
+          Abrir no Telegram
         </Button>
       </section>
 
@@ -135,11 +130,7 @@ const ReiDosVazadosPage = () => {
           <p className="text-white/90 text-sm md:text-base mb-2">
             Conteúdo novo todo dia. Entre agora e aproveite.
           </p>
-          <p className="text-white font-semibold text-sm md:text-base mb-4">O que te espera:</p>
-          <p className="text-blue-400 text-sm font-semibold mb-6 flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            É tudo de graça. Nenhuma taxa, nenhuma mensalidade.
-          </p>
+          <p className="text-white font-semibold text-sm md:text-base mb-6">O que te espera:</p>
           <div className="space-y-4">
             {benefits.map((item) => (
               <div key={item.title} className="flex gap-4 p-4 rounded-xl bg-black/50 border border-gray-800">
@@ -162,9 +153,6 @@ const ReiDosVazadosPage = () => {
         <h3 className="text-xl md:text-2xl font-bold text-white text-center mb-6" style={{ fontFamily: "'Playfair Display', serif" }}>
           Dê uma espiadinha 👀
         </h3>
-        <p className="text-center text-blue-400 text-sm font-semibold mb-4">
-          Esse vídeo é grátis. Todo o conteúdo do grupo também é.
-        </p>
         <div className="rounded-2xl overflow-hidden bg-black border border-gray-800 mb-6 w-full max-w-[320px] mx-auto aspect-[9/16] min-h-[300px]">
           <video
             src={`${CDN_BASE}/ScreenRecording_03-10-202617-22-57_1_0e5f2d03.mp4`}
@@ -174,12 +162,9 @@ const ReiDosVazadosPage = () => {
             preload="metadata"
           />
         </div>
-        <p className="text-center text-white/90 text-sm mb-4">
-          Entrar é grátis. Aproveite sem pagar nada.
-        </p>
-        <div className="text-center">
+        <div className="text-center mt-4">
           <Button onClick={openTelegram} className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8 py-6 rounded-xl">
-            Entrar no Grupo — 100% Grátis
+            Abrir no Telegram
           </Button>
         </div>
       </section>
