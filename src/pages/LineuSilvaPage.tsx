@@ -277,13 +277,13 @@ const LineuSilvaPage = () => {
                     <video
                       ref={(el) => { heroVideoRefs.current[i] = el; }}
                       src={slide.src}
-                      poster={slide.poster}
+                      {...(i === 0 ? {} : { poster: slide.poster })}
                       controls
                       autoPlay={i === 0}
                       loop
                       playsInline
                       className="w-full h-full object-cover"
-                      preload="auto"
+                      preload={i === 0 ? "auto" : "metadata"}
                     />
                   </div>
                 </CarouselItem>
